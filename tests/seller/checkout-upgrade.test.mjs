@@ -53,7 +53,7 @@ function serviceFixture() {
     });
     queue = result.catch(() => {}); return result;
   } };
-  const service = load('src/services/draftConfirmationService.ts', { 'node:crypto': crypto, '@/lib/prisma': db, '@/lib/order-policy': policy, '@/lib/draft-selection': selection });
+  const service = load('src/services/draftConfirmationService.ts', { 'node:crypto': crypto, '@/lib/prisma': db, '@/lib/order-policy': policy, '@/lib/draft-selection': selection, '@/lib/checkout-release': { BULK_DRAFT_CONFIRMATION_ENABLED: true } });
   return { state: () => state, config, service, call: (ids = ['a', 'b'], seller = 'seller', retryKey = key) => service.submitDraftsForConfirmation(seller, retryKey, ids) };
 }
 test('bulk confirmation claims whole selection once under modeled concurrent retries', async () => {
@@ -95,6 +95,7 @@ test('bulk endpoint rejects anonymous/wrong role and duplicate IDs before servic
       'next/server': { NextResponse: { json: body => body } }, zod: { z },
       '@/lib/api-utils': { getSessionUser: async () => actor, errorResponse: (message, status) => ({ message, status }) },
       '@/services/draftConfirmationService': { DraftConfirmationError: class extends Error {}, submitDraftsForConfirmation: () => assert.fail('Unexpected write') },
+      '@/lib/checkout-release': { BULK_DRAFT_CONFIRMATION_ENABLED: true },
     });
     const result = await route.POST({ json: async () => ({ orderIds: ['a', 'a'] }) });
     assert.equal(result.status, actor?.role === 'SELLER' ? 400 : 401);
@@ -106,14 +107,15 @@ function nodes(node, predicate) {
   if (!node || typeof node !== 'object') return [];
   return [...(predicate(node) ? [node] : []), ...nodes(node.props?.children, predicate)];
 }
-function draftsUI(post, confirmed = true) {
+function draftsUI(post, confirmed = true, bulk = true, get = async () => ({ data: { drafts: [] } })) {
   const states = [[valid('a', 2), valid('b', 3), { ...valid('blocked', 9), batchId: 'batch' }], [], false];
   const refs = []; let stateIndex = 0, refIndex = 0, confirms = 0;
   const Page = load('src/app/(dashboard)/seller/orders/drafts/page.tsx', {
     react: { useState: initial => { const index = stateIndex++; if (!(index in states)) states[index] = initial; return [states[index], value => { states[index] = typeof value === 'function' ? value(states[index]) : value; }]; },
       useRef: initial => { const index = refIndex++; return refs[index] ??= { current: initial }; }, useEffect: () => {} },
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
-    'next/link': 'a', axios: { post, isAxiosError: error => !!error.response }, '@/context/LanguageContext': language,
+    'next/link': 'a', axios: { post, patch: post, get, isAxiosError: error => !!error.response }, '@/context/LanguageContext': language,
+    '@/lib/checkout-release': { BULK_DRAFT_CONFIRMATION_ENABLED: bulk },
     '@/context/CartContext': { useCart: () => ({ sellerId: 'seller', ready: true }) },
     '@/lib/draft-selection': selection, '@/lib/product-images': { productImages: () => [] }, '@/components/seller/ProductThumbnail': 'thumbnail',
     '@/lib/order-submission-client': { submissionKey: async () => key, clearSubmissionKey: () => {} },
@@ -225,4 +227,66 @@ test('checkout malformed save receipt keeps original cart and enters uncertain r
   const f = checkoutUI(async () => ({ data: { orderIds: [] } })); f.render(); f.fill();
   await f.render().props.onSubmit({ preventDefault() {} });
   assert.equal(f.states[3], true); assert.equal(f.states[4], null); assert.equal(f.removed.length, 0);
+});
+
+test('production release policy keeps unverified bulk confirmation disabled', () => {
+  const release = load('src/lib/checkout-release.ts');
+  assert.equal(release.BULK_DRAFT_CONFIRMATION_ENABLED, false);
+});
+test('release bulk route denies sellers before body/service access and still denies other roles', async () => {
+  for (const actor of [null, { id: 'admin', role: 'ADMIN' }, { id: 'seller', role: 'SELLER' }]) {
+    const route = load('src/app/api/seller/orders/drafts/submit/route.ts', {
+      'next/server': { NextResponse: { json: body => body } }, zod: { z },
+      '@/lib/checkout-release': load('src/lib/checkout-release.ts'),
+      '@/lib/api-utils': { getSessionUser: async () => actor, errorResponse: (message, status) => ({ message, status }) },
+      '@/services/draftConfirmationService': { DraftConfirmationError: class extends Error {}, submitDraftsForConfirmation: () => assert.fail('No bulk write allowed') },
+    });
+    const result = await route.POST({ json: async () => assert.fail('Disabled route must not read body') });
+    assert.equal(result.status, actor?.role === 'SELLER' ? 503 : 401);
+  }
+});
+test('release bulk service fails closed even if called without the HTTP guard', async () => {
+  const service = load('src/services/draftConfirmationService.ts', {
+    'node:crypto': crypto, '@/lib/prisma': { __esModule: true, default: new Proxy({}, { get() { assert.fail('Disabled service must not access database'); } }) },
+    '@/lib/order-policy': policy, '@/lib/draft-selection': selection, '@/lib/checkout-release': load('src/lib/checkout-release.ts'),
+  });
+  await assert.rejects(service.submitDraftsForConfirmation('seller', key, ['a']), /not available/);
+});
+test('release draft UI hides bulk selection and sends one guarded main PATCH despite double click', async () => {
+  const requests = []; let release; const wait = new Promise(resolve => { release = resolve; });
+  const f = draftsUI(async (url, payload) => { requests.push({ url, payload }); await wait; return { data: { success: true, status: 'PENDING_CONFIRMATION' } }; }, true, false);
+  const view = f.render();
+  assert.equal(nodes(view, node => node.type === 'input' && node.props.type === 'checkbox').length, 0);
+  assert.equal(f.button(view, fr.sellerDrafts.selectAll), undefined);
+  const send = f.button(view, fr.sellerDrafts.send);
+  const first = send.props.onClick(); const second = send.props.onClick();
+  assert.equal(requests.length, 1); assert.equal(f.confirms(), 1);
+  assert.equal(requests[0].url, '/api/seller/orders/a/status'); assert.equal(requests[0].payload.status, 'PENDING_CONFIRMATION'); assert.equal(requests[0].payload.orderIds, undefined);
+  release(); await Promise.all([first, second]);
+  assert.equal(f.states[6].length, 1); assert.equal(f.states[6][0].status, 'success');
+});
+test('release single confirmation never retries uncertainty until a fresh list is read', async () => {
+  let calls = 0;
+  const f = draftsUI(async () => { calls++; throw Error('Response lost'); }, true, false,
+    async () => ({ data: { drafts: [valid('a', 2)] } }));
+  await f.button(f.render(), fr.sellerDrafts.send).props.onClick(); assert.equal(calls, 1);
+  let view = f.render(); assert.equal(f.states[5], true);
+  assert.ok(nodes(view, node => node.type === 'button' && node.props.children === fr.sellerDrafts.send).every(node => node.props.disabled));
+  await f.button(view, fr.sellerDrafts.send).props.onClick(); assert.equal(calls, 1);
+  await f.button(view, fr.sellerDrafts.refresh).props.onClick(); assert.equal(f.states[5], false);
+  view = f.render(); assert.equal(f.button(view, fr.sellerDrafts.send).props.disabled, false);
+});
+test('release single confirmation rejects malformed success without removing the order', async () => {
+  const f = draftsUI(async () => ({ data: { success: true, status: 'SHIPPED' } }), true, false);
+  await f.button(f.render(), fr.sellerDrafts.send).props.onClick();
+  assert.equal(f.states[0].length, 3); assert.equal(f.states[6][0].status, 'unknown');
+});
+
+test('auth route initialization preserves GET/POST handler without reading or logging database credentials', () => {
+  const options = {}; const handler = () => {};
+  const route = load('src/app/api/auth/[...nextauth]/route.ts', {
+    '@/lib/auth': { authOptions: options }, 'next-auth': actual => { assert.equal(actual, options); return handler; },
+  }, { process: new Proxy({}, { get() { assert.fail('Auth route must not inspect environment diagnostics'); } }),
+    console: { log: () => assert.fail('Auth route must not log environment diagnostics') } });
+  assert.equal(route.GET, handler); assert.equal(route.POST, handler);
 });

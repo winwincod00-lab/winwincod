@@ -2,12 +2,14 @@ import { createHash } from 'node:crypto';
 import prisma from '@/lib/prisma';
 import { assertBatchIds } from '@/lib/order-policy';
 import { eligibleDraft } from '@/lib/draft-selection';
+import { BULK_DRAFT_CONFIRMATION_ENABLED } from '@/lib/checkout-release';
 
 export class DraftConfirmationError extends Error {
   constructor(message: string, public status = 409) { super(message); }
 }
 // No financial/stock effects. This is DRAFT -> PENDING_CONFIRMATION only.
 export async function submitDraftsForConfirmation(sellerId: string, key: string | null, orderIds: string[]) {
+  if (!BULK_DRAFT_CONFIRMATION_ENABLED) throw new DraftConfirmationError('Bulk confirmation is not available in this release', 503);
   assertBatchIds(orderIds);
   if (!key || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(key)) throw new DraftConfirmationError('Invalid submission key', 400);
   const ids = [...orderIds].sort();

@@ -25,6 +25,8 @@
     "allocationHint": "Répartissez toutes les unités de chaque produit pour enregistrer. Vous pouvez sauvegarder moins de 5 PCS."
   },
   "sellerDrafts": {
+    "individual": "Vérifiez chaque brouillon, puis envoyez-le à la confirmation.",
+    "confirmOne": "Envoyer ce brouillon à la confirmation ? Aucun débit ni expédition.",
     "title": "Brouillons de commandes", "subtitle": "Vérifiez vos clients et envoyez vos brouillons à la confirmation en une sélection.",
     "rules": "Après confirmation, regroupez au moins 5 PCS éligibles pour la revue Admin. Aucun paiement ni réservation de stock ici.",
     "selectAll": "Tout sélectionner", "deselectAll": "Tout désélectionner", "selected": "commandes sélectionnées", "units": "PCS sélectionnées",

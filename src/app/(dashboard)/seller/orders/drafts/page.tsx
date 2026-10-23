@@ -8,6 +8,7 @@ import { eligibleDraft, selectedDrafts, type SelectableDraft } from '@/lib/draft
 import { submissionKey, clearSubmissionKey } from '@/lib/order-submission-client';
 import { productImages } from '@/lib/product-images';
 import ProductThumbnail from '@/components/seller/ProductThumbnail';
+import { BULK_DRAFT_CONFIRMATION_ENABLED } from '@/lib/checkout-release';
 
 type Draft = SelectableDraft & { customerName: string; productName: string; city: string; product?: { images: string; sku: string } | null };
 type Outcome = { order: Draft; status: 'success' | 'failed' | 'unknown' };
@@ -45,6 +46,7 @@ function DraftsContent({ sellerId, ready }: { sellerId: string; ready: boolean }
       if (!Array.isArray(response.data.drafts)) throw new Error('Invalid list');
       if (!mounted.current || version !== requestVersion.current) return;
       setDrafts(response.data.drafts); setSelected([]); setPage(1);
+      if (!BULK_DRAFT_CONFIRMATION_ENABLED) setUncertain(false);
     } catch { if (mounted.current && version === requestVersion.current) setError(true); }
     finally { if (mounted.current && version === requestVersion.current) setLoading(false); }
   }
@@ -55,6 +57,7 @@ function DraftsContent({ sellerId, ready }: { sellerId: string; ready: boolean }
     return () => { mounted.current = false; versionRef.current++; };
   }, [ready, sellerId]);
   async function submit() {
+    if (!BULK_DRAFT_CONFIRMATION_ENABLED) return;
     if (lock.current || !sellerId || !ready || (!pending.current && !choice.count)) return;
     lock.current = true;
     const orders = pending.current?.orders ?? choice.orders;
@@ -84,22 +87,45 @@ function DraftsContent({ sellerId, ready }: { sellerId: string; ready: boolean }
       if (!unknown) { pending.current = null; setSelected([]); }
     } finally { lock.current = false; if (mounted.current) setBusy(false); }
   }
+  async function submitOne(order: Draft) {
+    if (lock.current || !sellerId || !ready || uncertain || !eligibleDraft(order)) return;
+    lock.current = true;
+    if (!window.confirm(t('confirmOne') + '\n' + order.customerName)) { lock.current = false; return; }
+    setBusy(true); setOutcomes([]);
+    try {
+      const response = await axios.patch('/api/seller/orders/' + encodeURIComponent(order.id) + '/status', { status: 'PENDING_CONFIRMATION' });
+      if (response.data?.success !== true || response.data.status !== 'PENDING_CONFIRMATION') throw new Error('Unverified confirmation response');
+      if (!mounted.current) return;
+      setOutcomes([{ order, status: 'success' }]);
+      setDrafts(previous => previous.filter(row => row.id !== order.id));
+      setPage(1);
+    } catch (failure) {
+      if (!mounted.current) return;
+      const status = axios.isAxiosError(failure) ? failure.response?.status : undefined;
+      const unknown = !status || status >= 500;
+      setUncertain(unknown);
+      setOutcomes([{ order, status: unknown ? 'unknown' : 'failed' }]);
+      // Existing main status endpoint has no replay receipt. Do not blindly retry:
+      // require a successful fresh seller-scoped read before another attempt.
+    } finally { lock.current = false; if (mounted.current) setBusy(false); }
+  }
   const primary = 'min-h-12 rounded-xl bg-[#4361EE] px-5 py-3 text-sm font-bold text-white hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-blue-700 disabled:opacity-40';
   return <div dir={lang === 'ar' ? 'rtl' : 'ltr'} className="mx-auto max-w-6xl space-y-6 pb-8">
     <header className="flex flex-wrap items-start justify-between gap-4"><div><h1 className="text-2xl font-extrabold text-slate-900 sm:text-3xl">{t('title')}</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">{t('subtitle')}</p></div><Link className={primary} href="/seller/orders/new">+ {t('new')}</Link></header>
     <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4 text-sm leading-7 text-blue-900">{t('rules')}<div className="mt-2 flex flex-wrap gap-4 text-xs font-bold"><Link className="underline" href="/seller/orders">{t('orders')}</Link><Link className="underline" href="/seller/batches">{t('batches')}</Link></div></div>
-    {uncertain && <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">{t('reconcile')}</p>}
+    {uncertain && <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">{BULK_DRAFT_CONFIRMATION_ENABLED ? t('reconcile') : t('unknown')} {!BULK_DRAFT_CONFIRMATION_ENABLED && t('refresh')}</p>}
     <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex flex-wrap items-center gap-4"><button type="button" disabled={disabled || !eligible.length} onClick={() => setSelected(allSelected ? [] : eligible.map(order => order.id))} className="min-h-11 rounded-xl border border-slate-200 px-4 text-sm font-semibold disabled:opacity-40">{allSelected ? t('deselectAll') : t('selectAll')}</button><p role="status" aria-live="polite" className="text-sm text-slate-500"><strong className="text-slate-900">{displayedChoice.count}</strong> {t('selected')} · <strong className="text-blue-700">{displayedChoice.units}</strong> {t('units')}</p></div>
-      <div className="flex flex-wrap gap-2"><button type="button" disabled={busy || loading || !ready || !sellerId} onClick={load} className="min-h-12 rounded-xl px-4 text-sm font-bold text-slate-600 disabled:opacity-40">{t('refresh')}</button><button type="button" disabled={busy || (!uncertain && (disabled || !choice.count))} onClick={submit} className={primary}>{busy ? t('sending') : uncertain ? t('retrySame') : t('send')}</button></div>
+      {BULK_DRAFT_CONFIRMATION_ENABLED ? <div className="flex flex-wrap items-center gap-4"><button type="button" disabled={disabled || !eligible.length} onClick={() => setSelected(allSelected ? [] : eligible.map(order => order.id))} className="min-h-11 rounded-xl border border-slate-200 px-4 text-sm font-semibold disabled:opacity-40">{allSelected ? t('deselectAll') : t('selectAll')}</button><p role="status" aria-live="polite" className="text-sm text-slate-500"><strong className="text-slate-900">{displayedChoice.count}</strong> {t('selected')} · <strong className="text-blue-700">{displayedChoice.units}</strong> {t('units')}</p></div> : <p className="text-sm text-slate-500">{t('individual')}</p>}
+      <div className="flex flex-wrap gap-2"><button type="button" disabled={busy || loading || !ready || !sellerId} onClick={load} className="min-h-12 rounded-xl px-4 text-sm font-bold text-slate-600 disabled:opacity-40">{t('refresh')}</button>{BULK_DRAFT_CONFIRMATION_ENABLED && <button type="button" disabled={busy || (!uncertain && (disabled || !choice.count))} onClick={submit} className={primary}>{busy ? t('sending') : uncertain ? t('retrySame') : t('send')}</button>}</div>
     </div>
-    <p className="text-xs leading-6 text-slate-500">{t('atomic')}</p>
+    {BULK_DRAFT_CONFIRMATION_ENABLED && <p className="text-xs leading-6 text-slate-500">{t('atomic')}</p>}
     {outcomes.length > 0 && <div role="status" aria-live="polite" className="rounded-2xl border border-slate-200 bg-white p-5"><h2 className="mb-3 font-bold">{t('results')}</h2><ul className="divide-y divide-slate-100">{outcomes.map(({ order, status }) => <li key={order.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"><span className="min-w-0 break-words">{order.customerName} · {order.city} · {order.quantity} PCS</span><span className={status === 'success' ? 'text-emerald-700' : status === 'unknown' ? 'text-amber-800' : 'text-red-700'}>{t(status)}</span></li>)}</ul></div>}
     {loading ? <p role="status" className="animate-pulse rounded-2xl border bg-white p-8 text-slate-500">{t('loading')}</p> : error ? <p role="alert" className="rounded-xl border border-rose-100 bg-rose-50 p-5 text-sm text-rose-700">{t('error')}</p> : !drafts.length ? <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center"><h2 className="text-lg font-bold">{t('empty')}</h2><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">{t('emptyHint')}</p><Link href="/seller/orders" className="mt-5 inline-block text-sm font-bold text-blue-700">{t('orders')}</Link></div> :
-      <ul className="space-y-3">{visible.map(order => { const eligible = eligibleDraft(order); return <li key={order.id} className={'flex items-start gap-4 rounded-2xl border bg-white p-4 shadow-sm sm:p-5 ' + (selected.includes(order.id) ? 'border-blue-300 ring-1 ring-blue-100' : 'border-slate-200')}>
-        <input type="checkbox" checked={selected.includes(order.id)} disabled={disabled || !eligible} onChange={() => setSelected(previous => previous.includes(order.id) ? previous.filter(id => id !== order.id) : [...previous, order.id])} aria-label={t('select') + ' ' + order.customerName} className="mt-3 size-5 shrink-0 accent-blue-600 disabled:opacity-30" />
+      <ul className="space-y-3">{visible.map(order => { const eligible = eligibleDraft(order); return <li key={order.id} className={'flex flex-wrap items-start gap-4 rounded-2xl border bg-white p-4 shadow-sm sm:flex-nowrap sm:p-5 ' + (selected.includes(order.id) ? 'border-blue-300 ring-1 ring-blue-100' : 'border-slate-200')}>
+        {BULK_DRAFT_CONFIRMATION_ENABLED && <input type="checkbox" checked={selected.includes(order.id)} disabled={disabled || !eligible} onChange={() => setSelected(previous => previous.includes(order.id) ? previous.filter(id => id !== order.id) : [...previous, order.id])} aria-label={t('select') + ' ' + order.customerName} className="mt-3 size-5 shrink-0 accent-blue-600 disabled:opacity-30" />}
         <ProductThumbnail src={order.product ? productImages(order.product.images)[0] : undefined} name={order.productName} />
         <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center justify-between gap-2"><Link href={'/seller/orders/' + order.id} className="break-words font-bold text-slate-900 hover:text-blue-700">{order.customerName}</Link><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{eligible ? t('draft') : t('ineligible')}</span></div><p className="mt-1 text-sm text-slate-500">{order.city}</p><p className="mt-3 break-words text-sm font-medium">{order.productName} <span className="text-blue-700">× {order.quantity} PCS</span></p>{order.product?.sku && <p className="mt-1 text-xs text-slate-400" dir="auto">{order.product.sku}</p>}</div>
+        {!BULK_DRAFT_CONFIRMATION_ENABLED && <button type="button" disabled={disabled || !eligible} onClick={() => submitOne(order)} className={primary + ' w-full shrink-0 sm:w-auto'}>{busy ? t('sending') : t('send')}</button>}
       </li>; })}</ul>}
     {!loading && !error && pageCount > 1 && <nav aria-label={t('page')} className="flex flex-wrap items-center justify-center gap-4 text-sm"><button type="button" disabled={disabled || page <= 1} className="min-h-11 rounded-xl border bg-white px-4 disabled:opacity-40" onClick={() => { setPage(previous => previous - 1); setSelected([]); }}>{t('previous')}</button><span>{t('page')} {page} / {pageCount}</span><button type="button" disabled={disabled || page >= pageCount} className="min-h-11 rounded-xl border bg-white px-4 disabled:opacity-40" onClick={() => { setPage(previous => previous + 1); setSelected([]); }}>{t('nextPage')}</button></nav>}
   </div>;

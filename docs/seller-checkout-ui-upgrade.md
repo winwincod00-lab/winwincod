@@ -1,5 +1,7 @@
 # Seller checkout and draft selection upgrade
 
+> Production release override: [the checkout production release report](checkout-production-release.md) supersedes the bulk-action availability described below. The guarded UI-only candidate keeps bulk confirmation disabled in both server and service and retains main's individual status endpoint. This document records the original babb2f0 upgrade.
+
 2026-10-23. Local source changes only; no commit, branch change, push or deployment. Root environment, credentials, active Prisma schema and migrations remain untouched. No database, bank or carrier connection, live data write or dependency installation occurred. Existing Phase 6 work and `.claude/settings.local.json` were preserved.
 
 ## Implemented
