@@ -1,6 +1,6 @@
 export type CartItem = {
   cartId: string; productId: string; productName: string; productImage: string;
-  sellerPrice: number; marketPrice: number; quantity: number; stock: number;
+  sellerPrice: number; marketPrice: number; quantity: number; stock: number; sku?: string;
 };
 const cartKey = (sellerId: string) => 'winwin_cart_v4:' + encodeURIComponent(sellerId);
 export const getCart = (sellerId: string): CartItem[] => {
@@ -9,7 +9,7 @@ export const getCart = (sellerId: string): CartItem[] => {
     const data: unknown = JSON.parse(localStorage.getItem(cartKey(sellerId)) || '[]');
     if (!Array.isArray(data)) return [];
     return data.filter((item): item is CartItem => !!item && typeof item === 'object' &&
-      typeof item.cartId === 'string' && typeof item.productId === 'string' && typeof item.productName === 'string' && typeof item.productImage === 'string' &&
+      typeof item.cartId === 'string' && typeof item.productId === 'string' && typeof item.productName === 'string' && typeof item.productImage === 'string' && (item.sku === undefined || typeof item.sku === 'string') &&
       Number.isSafeInteger(item.quantity) && item.quantity > 0 && Number.isSafeInteger(item.stock) && item.stock >= 0 &&
       Number.isFinite(item.sellerPrice) && item.sellerPrice >= 0 && Number.isFinite(item.marketPrice) && item.marketPrice >= 0);
   } catch { return []; }

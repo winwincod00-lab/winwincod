@@ -4,7 +4,7 @@ import { getSessionUser, errorResponse } from "@/lib/api-utils";
 
 export const dynamic = 'force-dynamic'; // لضمان عدم تخزين البيانات مؤقتاً
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const user = await getSessionUser();
     if (!user || user.role !== "SELLER") return errorResponse("غير مصرح", 401);
@@ -16,12 +16,13 @@ export async function GET(req: Request) {
         status: "DRAFT",
         batchId: null // تأكد أنها ليست في دفعة بالفعل
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      include: { product: { select: { images: true, sku: true } } },
     });
 
     return NextResponse.json({ success: true, drafts });
 
-  } catch (error) {
+  } catch {
     return errorResponse("فشل جلب المسودات", 500);
   }
 }

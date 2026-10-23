@@ -10,6 +10,14 @@ import * as jsxRuntime from 'react/jsx-runtime';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 function load(path, imports = {}, globals = {}) {
+  if (path === 'src/app/(dashboard)/seller/orders/checkout/page.tsx') {
+    const messages = JSON.parse(fs.readFileSync('src/messages/fr.json', 'utf8'));
+    imports = {
+      '@/context/LanguageContext': { useLanguage: () => ({ lang: 'fr', t: key => key.split('.').reduce((value, part) => value?.[part], messages) ?? key }) },
+      '@/components/seller/ProductPicker': 'product-picker', '@/components/seller/ProductThumbnail': 'product-thumbnail',
+      ...imports,
+    };
+  }
   const code = ts.transpileModule(fs.readFileSync(path, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;

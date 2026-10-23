@@ -12,8 +12,10 @@ function parseFirstImage(images: string): string {
   } catch { return images || ""; }
 }
 
+type CatalogProduct = { id: string; name: string; images: string; sku?: string; sellerPrice: number | string; marketPrice: number | string; stock: number };
+
 export default function ProductSelectionPage() {
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [error, setError] = useState(false);
   const [revision, setRevision] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -24,7 +26,7 @@ export default function ProductSelectionPage() {
     axios.get("/api/seller/products")
       .then(res => {
         const preferred = new URLSearchParams(window.location.search).get('productId');
-        const products = res.data.products || [];
+        const products: CatalogProduct[] = res.data.products || [];
         setProducts(preferred ? [...products].sort((a, b) => Number(b.id === preferred) - Number(a.id === preferred)) : products);
       })
       .catch(() => { setError(true); toast.error("فشل تحميل المنتجات"); })
@@ -33,7 +35,7 @@ export default function ProductSelectionPage() {
 
   const getQty = (id: string) => quantities[id] || 1;
 
-  const handleAdd = (product: any) => {
+  const handleAdd = (product: CatalogProduct) => {
     const qty = getQty(product.id);
     const inCart = cart.filter(item => item.productId === product.id).reduce((sum, item) => sum + item.quantity, 0);
     if (!Number.isSafeInteger(qty) || qty < 1 || qty + inCart > product.stock) {
@@ -42,6 +44,7 @@ export default function ProductSelectionPage() {
     const added = addItem({
       productId: product.id,
       productName: product.name,
+      sku: typeof product.sku === 'string' ? product.sku : undefined,
       productImage: parseFirstImage(product.images),
       sellerPrice: Number(product.sellerPrice),
       marketPrice: Number(product.marketPrice),

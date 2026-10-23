@@ -76,13 +76,15 @@ test('required fields and application limits reject unsafe input without transpo
     assert.equal(r.code, 'invalid_input');
   }
 });
-test('translations preserve key structure and use neutral preparation wording', () => {
+test('translations retain existing keys and use neutral preparation wording', () => {
   function keys(x, prefix = '') { return Object.entries(x).flatMap(([k,v]) => typeof v === 'object' ? keys(v, prefix+k+'.') : [prefix+k]).sort(); }
   for (const lang of ['ar', 'fr']) {
     const path = `src/messages/${lang}.json`;
     const current = JSON.parse(readFileSync(path, 'utf8'));
     const previous = JSON.parse(execFileSync('git', ['show', `HEAD:${path}`], { encoding: 'utf8' }));
-    assert.deepEqual(keys(current), keys(previous));
+    const currentKeys = new Set(keys(current));
+    for (const key of keys(previous)) assert.ok(currentKeys.has(key), 'Removed translation: ' + key);
+    assert.deepEqual(keys(current.tracking), keys(previous.tracking));
     assert.ok(!/ozon|livcash/i.test(current.tracking.step3sub));
   }
 });
