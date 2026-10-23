@@ -1,13 +1,15 @@
+import { getSessionUser } from '@/lib/api-utils';
 import prisma from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { productImages } from "@/lib/product-images";
+import { notFound, redirect } from "next/navigation";
 import AddToCatalogButton from "./AddToCatalogButton"; // سننشئه بالأسفل
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 
 // هذه الصفحة (Server Component) لجلب البيانات بسرعة SEO
 export default async function ProductDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const session = await getServerSession(authOptions);
+  const user = await getSessionUser();
+
+  if (!user || user.role !== "SELLER") redirect("/login");
 
   const product = await prisma.product.findUnique({
     where: { id },
@@ -20,7 +22,7 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
   const isAdded = await prisma.sellerProduct.findUnique({
     where: {
       sellerId_productId: {
-        sellerId: session?.user?.id as string,
+        sellerId: user.id,
         productId: id
       }
     }
@@ -43,9 +45,9 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* قسم الصور */}
         <div className="bg-white p-2 rounded-xl shadow-sm h-[450px] overflow-hidden border">
-  {product.images ? (
+  {productImages(product.images).length > 0 ? (
     <img 
-      src={product.images} 
+      src={productImages(product.images)[0]}
       alt={product.name} 
       className="w-full h-full object-contain" 
     />

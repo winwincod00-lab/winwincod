@@ -16,7 +16,7 @@ const NAV_ITEMS: Record<Role, Array<{ label: string; icon: ReactNode; href: stri
     { label: "الطلبات",   icon: <Package className="w-5 h-5" />,         href: "/seller/orders"        },
     { label: "المحفظة",   icon: <Wallet className="w-5 h-5" />,          href: "/seller/wallet"        },
     { label: "الإشعارات", icon: <Bell className="w-5 h-5" />,            href: "/seller/notifications" },
-    { label: "حسابي",     icon: <User className="w-5 h-5" />,            href: "/seller/profile"       },
+    { label: "الدفعات",   icon: <Package className="w-5 h-5" />,         href: "/seller/batches"       },
   ],
   admin: [
     { label: "الرئيسية",  icon: <BarChart3 className="w-5 h-5" />,       href: "/admin/dashboard" },

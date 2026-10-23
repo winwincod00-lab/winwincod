@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { Clock, Truck, CheckCircle, RotateCcw } from "lucide-react";
@@ -7,6 +7,8 @@ import { useLanguage } from "@/context/LanguageContext";
 
 type Order = {
   id: string;
+  batchId: string | null;
+  reviewStatus: string | null;
   customerName: string;
   customerPhone: string;
   city: string;
@@ -23,13 +25,13 @@ type Order = {
   product?: { sellerPrice: number };
 };
 
-type Tab = "PROCESSING" | "SHIPPED" | "DELIVERED" | "RETURNED";
+type Tab = "DRAFT" | "PENDING_CONFIRMATION" | "CONFIRMED" | "WAITING_PAYMENT" | "CANCELLED" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "RETURNED";
 
 const COMMISSION = 20;
 
 export default function AdminOrdersPage() {
   const { t, lang } = useLanguage();
-  const [activeTab, setActiveTab]       = useState<Tab>("PROCESSING");
+  const [activeTab, setActiveTab]       = useState<Tab>("WAITING_PAYMENT");
   const [orders, setOrders]             = useState<Order[]>([]);
   const [loading, setLoading]           = useState(false);
   const [selectedIds, setSelectedIds]   = useState<string[]>([]);
@@ -38,29 +40,45 @@ export default function AdminOrdersPage() {
   const [deliverSubmitting, setDeliverSubmitting] = useState(false);
   const [returnConfirm, setReturnConfirm] = useState<Order | null>(null);
 
+  const [reviewing, setReviewing] = useState(false);
+
   const TABS: { key: Tab; label: string }[] = [
+    { key: "DRAFT", label: "Brouillons vendeur" },
+    { key: "PENDING_CONFIRMATION", label: "À confirmer" },
+    { key: "CONFIRMED", label: "Confirmées — non soumises" },
+    { key: "WAITING_PAYMENT", label: "Revue Admin / paiement" },
+    { key: "CANCELLED", label: "Annulées / rejetées" },
     { key: "PROCESSING", label: t("admin.orders.processing") },
     { key: "SHIPPED",    label: t("admin.orders.shipped")    },
     { key: "DELIVERED",  label: t("admin.orders.delivered")  },
     { key: "RETURNED",   label: t("admin.orders.returned")   },
   ];
 
-  useEffect(() => {
-    fetchOrders(activeTab);
-    setSelectedIds([]);
-  }, [activeTab]);
-
-  const fetchOrders = async (status: Tab) => {
-    setLoading(true);
+  const fetchSequence = useRef(0);
+  const fetchOrders = useCallback(async (status: Tab) => {
+    const sequence = ++fetchSequence.current;
+    setOrders([]); setLoading(true);
     try {
-      const res = await axios.get(`/api/admin/orders?status=${status}`);
-      setOrders(res.data.orders || []);
+      const res = await axios.get('/api/admin/orders?status=' + status);
+      if (sequence === fetchSequence.current) setOrders(res.data.orders || []);
     } catch {
-      toast.error(lang === "fr" ? "Erreur de chargement" : "فشل تحميل الطلبات");
-    } finally {
-      setLoading(false);
-    }
-  };
+      if (sequence === fetchSequence.current) toast.error('Chargement impossible — réessayez');
+    } finally { if (sequence === fetchSequence.current) setLoading(false); }
+  }, []);
+  useEffect(() => { void fetchOrders(activeTab); setSelectedIds([]); }, [activeTab, fetchOrders]);
+
+  async function review(batchId: string, decision: 'APPROVE' | 'REJECT') {
+    if (reviewing) return;
+    const reason = window.prompt('Motif de la décision Admin (lot entier)');
+    if (!reason?.trim()) return;
+    setReviewing(true);
+    try {
+      await axios.post('/api/admin/batches/review', { batchId, decision, reason });
+      toast.success(decision === 'APPROVE' ? 'Approuvé. Paiement vendeur requis avant préparation.' : 'Lot rejeté sans débit.');
+      await fetchOrders('WAITING_PAYMENT');
+    } catch (error) { toast.error(axios.isAxiosError(error) ? error.response?.data?.error ?? 'Décision impossible' : 'Décision impossible'); }
+    finally { setReviewing(false); }
+  }
 
   // --- PROCESSING tab actions ---
   const toggleSelect = (id: string) =>
@@ -74,14 +92,16 @@ export default function AdminOrdersPage() {
 
   const handleDispatch = async () => {
     if (selectedIds.length === 0) return;
+    const reason = window.prompt("سبب الإرسال اليدوي (يسجل في سجل التدقيق)");
+    if (!reason?.trim()) return;
     setDispatching(true);
     try {
-      const res = await axios.post("/api/admin/orders/dispatch", { orderIds: selectedIds });
+      const res = await axios.post("/api/admin/orders/dispatch", { orderIds: selectedIds, reason });
       toast.success(res.data.message);
       setSelectedIds([]);
       fetchOrders("PROCESSING");
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || (lang === "fr" ? "Une erreur s'est produite" : "حدث خطأ"));
+    } catch (error: unknown) {
+      toast.error(axios.isAxiosError(error) ? error.response?.data?.error || "Action impossible" : "Action impossible");
     } finally {
       setDispatching(false);
     }
@@ -112,8 +132,8 @@ export default function AdminOrdersPage() {
       toast.success(res.data.message);
       setDeliverModal(null);
       fetchOrders("SHIPPED");
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || (lang === "fr" ? "Une erreur s'est produite" : "حدث خطأ"));
+    } catch (error: unknown) {
+      toast.error(axios.isAxiosError(error) ? error.response?.data?.error || "Action impossible" : "Action impossible");
     } finally {
       setDeliverSubmitting(false);
     }
@@ -125,8 +145,8 @@ export default function AdminOrdersPage() {
       toast.success(res.data.message);
       setReturnConfirm(null);
       fetchOrders("SHIPPED");
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || (lang === "fr" ? "Une erreur s'est produite" : "حدث خطأ"));
+    } catch (error: unknown) {
+      toast.error(axios.isAxiosError(error) ? error.response?.data?.error || "Action impossible" : "Action impossible");
     }
   };
 
@@ -217,7 +237,7 @@ export default function AdminOrdersPage() {
                 {activeTab === "DELIVERED" && <th className="p-4">{t("admin.orders.codReceived")}</th>}
                 {activeTab === "DELIVERED" && <th className="p-4">{t("admin.orders.sellerProfit")}</th>}
                 <th className="p-4">{t("admin.orders.date")}</th>
-                {(activeTab === "PROCESSING" || activeTab === "SHIPPED") && (
+                {(activeTab === "PROCESSING" || activeTab === "SHIPPED" || activeTab === "WAITING_PAYMENT") && (
                   <th className="p-4">{t("admin.orders.action")}</th>
                 )}
               </tr>
@@ -248,6 +268,7 @@ export default function AdminOrdersPage() {
                   )}
                   <td className="p-4">
                     <p className="font-bold text-[#1E293B]">{order.customerName}</p>
+                    {order.batchId && <p className="text-xs break-all">Lot : {order.batchId} · {order.reviewStatus === 'REJECTED' ? 'Rejeté par Admin' : order.reviewStatus === 'APPROVED' ? 'Approuvé' : order.reviewStatus === 'PENDING_REVIEW' ? 'En attente de revue Admin' : 'Historique payé'}</p>}
                     <p className="text-xs text-slate-400">{order.customerPhone}</p>
                   </td>
                   <td className="p-4 text-slate-500">{order.city}</td>
@@ -277,6 +298,9 @@ export default function AdminOrdersPage() {
                   <td className="p-4 text-slate-400 text-xs">
                     {new Date(order.updatedAt).toLocaleDateString(lang === "fr" ? "fr-FR" : "ar-MA")}
                   </td>
+                  {activeTab === "WAITING_PAYMENT" && <td className="p-4">
+                    {order.reviewStatus === 'PENDING_REVIEW' && order.batchId ? <div className="flex gap-2"><button disabled={reviewing} onClick={() => review(order.batchId!, 'APPROVE')} className="p-3 bg-green-100 rounded">Approuver le lot</button><button disabled={reviewing} onClick={() => review(order.batchId!, 'REJECT')} className="p-3 bg-red-100 rounded">Rejeter le lot</button></div> : <p>{order.reviewStatus === 'APPROVED' ? 'Approuvé — paiement vendeur requis' : 'État historique à vérifier'}</p>}
+                  </td>}
                   {activeTab === "SHIPPED" && (
                     <td className="p-4">
                       <div className="flex gap-2">

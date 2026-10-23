@@ -24,14 +24,16 @@ export default function LogisticsPage() {
 
   const markAsShipped = async (batchId: string) => {
     if (!confirm("هل أنت متأكد من خروج هذه الشحنة من المستودع؟")) return;
+    const reason = window.prompt("سبب الإرسال اليدوي (يسجل في سجل التدقيق)");
+    if (!reason?.trim()) return;
     try {
-      const res = await axios.post("/api/admin/logistics/ship", { batchId });
+      const res = await axios.post("/api/admin/logistics/ship", { batchId, reason });
       if (res.data.success) {
         alert("تم تحديث الحالة إلى (مشحون) بنجاح!");
         fetchReadyBatches();
       }
-    } catch {
-      alert("حدث خطأ أثناء تحديث حالة الشحن");
+    } catch (error) {
+      alert(axios.isAxiosError(error) ? error.response?.data?.error ?? "تعذر الإرسال" : "تعذر الإرسال");
     }
   };
 

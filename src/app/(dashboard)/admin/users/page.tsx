@@ -1,6 +1,5 @@
+import { getSessionUser } from '@/lib/api-utils';
 import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
 const roleBadge: Record<string, string> = {
@@ -11,8 +10,8 @@ const roleBadge: Record<string, string> = {
 const roleLabel: Record<string, string> = { ADMIN: "مدير", CALL_CENTER: "كول سنتر", SELLER: "بائع" };
 
 export default async function AdminUsersPage() {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "ADMIN") redirect("/login");
+  const user = await getSessionUser();
+  if (user?.role !== "ADMIN") redirect("/login");
 
   const users = await prisma.user.findMany({
     orderBy: { createdAt: "desc" },

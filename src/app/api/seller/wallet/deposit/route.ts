@@ -1,22 +1,23 @@
+import { codInput } from '@/lib/order-input';
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma"; // تأكد من وجود @ أو المسار الصحيح
 import { getSessionUser, errorResponse } from "@/lib/api-utils";
 import { z } from "zod";
 
 const depositSchema = z.object({
-  amount: z.coerce.number().positive(),
+  amount: codInput.refine(amount => amount > 0, 'المبلغ يجب أن يكون موجباً'),
   receiptImage: z.string().url("رابط الوصل غير صالح"),
 });
 
 export async function POST(req: Request) {
   try {
     const user = await getSessionUser();
-    if (!user) return errorResponse("غير مصرح", 401);
+    if (!user || user.role !== "SELLER") return errorResponse("غير مصرح", 401);
 
     const body = await req.json();
     const validation = depositSchema.safeParse(body);
 
-    if (!validation.success) return errorResponse(validation.error.errors[0].message, 400);
+    if (!validation.success) return errorResponse(validation.error.issues[0].message, 400);
 
     await prisma.depositrequest.create({
       data: {
@@ -28,8 +29,8 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Deposit error:", error);
-    return errorResponse(error.message, 500);
+    return errorResponse("تعذر حفظ الطلب؛ راجع السجل قبل إعادة المحاولة", 500);
   }
 }

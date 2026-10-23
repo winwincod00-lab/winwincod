@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   Rocket, Package, DollarSign, User, BookOpen,
   Megaphone, Phone, Lightbulb, CheckCircle,
-  AlertTriangle, Landmark, CreditCard
+  CreditCard
 } from "lucide-react";
 import Image from "next/image";
 import axios from "axios";
@@ -228,8 +228,8 @@ function Step3({ onNext }: { onNext: () => void }) {
   const steps = [
     { icon: <Package className="w-5 h-5 text-[#4361EE]" />,    title: "اختر منتجك",           desc: "تصفح الكتالوج واختر المنتج المناسب لجمهورك - السعر والتكلفة محددين مسبقاً" },
     { icon: <Megaphone className="w-5 h-5 text-[#4361EE]" />,  title: "سوّق وسجل الطلبات",    desc: "روّج للمنتج بطريقتك (سوشيال ميديا، إعلانات...) وسجل طلبات عملائك في المنصة" },
-    { icon: <Phone className="w-5 h-5 text-[#4361EE]" />,      title: "فريقنا يأكد الطلب",     desc: "نتصل بعملائك لتأكيد الطلبية نيابة عنك" },
-    { icon: <DollarSign className="w-5 h-5 text-[#4361EE]" />, title: "نشحن ونعطيك أرباحك",   desc: "نتكفل بالشحن، وبعد التسليم كتوصلك أرباحك: الربح = سعر البيع - التكلفة - رسوم الشحن" },
+    { icon: <Phone className="w-5 h-5 text-[#4361EE]" />,      title: "أرسل الطلب للتأكيد",     desc: "راجع الهاتف والعنوان ثم أرسل المسودة للتأكيد. لا تنتقل للشحن قبل التأكيد" },
+    { icon: <DollarSign className="w-5 h-5 text-[#4361EE]" />, title: "أرسل للمراجعة ثم ادفع بعد القبول",   desc: "اجمع 5 وحدات من الطلبات المؤكدة والمؤهلة على الأقل وأرسلها لمراجعة الإدارة دون دفع. بعد القبول الصريح ادفع تكلفة الدفعة ثم تابع تجهيز المستودع. راجع المحفظة للربح المسجل بعد التسليم" },
   ];
 
   return (
@@ -237,7 +237,7 @@ function Step3({ onNext }: { onNext: () => void }) {
       <div className="text-center">
         <BookOpen className="w-10 h-10 text-[#4361EE] mx-auto" />
         <h2 className="text-2xl font-black text-[#1E293B] mt-2">كيف تعمل المنصة؟</h2>
-        <p className="text-slate-400 text-sm mt-1">4 خطوات بسيطة لتحقيق أرباحك</p>
+        <p className="text-slate-400 text-sm mt-1">من اختيار المنتج إلى متابعة التسليم والتسوية</p>
       </div>
 
       {/* Steps */}
@@ -266,7 +266,7 @@ function Step3({ onNext }: { onNext: () => void }) {
       {/* Pricing example */}
       <div className="bg-gradient-to-br from-[#4361EE] to-[#3254D4] rounded-2xl p-5 text-white">
         <p className="font-black text-base mb-4 flex items-center gap-2">
-          <Lightbulb className="w-5 h-5" /> مثال على الأرباح
+          <Lightbulb className="w-5 h-5" /> مثال توضيحي فقط — ليس رصيد حسابك
         </p>
         <div className="space-y-2.5">
           {[
@@ -282,7 +282,7 @@ function Step3({ onNext }: { onNext: () => void }) {
             </div>
           ))}
           <div className="border-t border-white/20 pt-2.5 flex items-center justify-between">
-            <span className="text-white font-black flex items-center gap-1"><CheckCircle className="w-4 h-4" /> ربحك الصافي</span>
+            <span className="text-white font-black flex items-center gap-1"><CheckCircle className="w-4 h-4" /> نتيجة المثال قبل أي تسويات أخرى</span>
             <span className="text-green-300 font-black text-xl">70 درهم</span>
           </div>
         </div>
@@ -313,41 +313,15 @@ function Step4({
         <DollarSign className="w-10 h-10 text-[#4361EE] mx-auto" />
         <h2 className="text-2xl font-black text-[#1E293B] mt-2">شحن المحفظة</h2>
         <p className="text-slate-400 text-sm mt-1 leading-relaxed">
-          لإضافة طلباتك، تحتاج رصيداً في محفظتك لتغطية تكاليف الشحن
+          يمكنك حفظ المسودات دون رصيد. تحتاج رصيداً كافياً عند دفع دفعة مقبولة من الإدارة تضم 5 وحدات من الطلبات المؤكدة والمؤهلة على الأقل
         </p>
       </div>
 
-      {/* Info banner */}
-      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
-        <AlertTriangle className="w-6 h-6 text-amber-500 flex-shrink-0 mt-0.5" />
-        <div>
-          <p className="font-black text-amber-800 text-sm">الرصيد الأدنى الموصى به</p>
-          <p className="text-amber-700 font-black text-3xl mt-1">200 درهم</p>
-          <p className="text-amber-600 text-xs mt-1">يكفي لتغطية رسوم الشحن لأول طلباتك</p>
-        </div>
-      </div>
-
-      {/* Bank transfer card */}
-      <div className="bg-white border-2 border-[#4361EE]/20 rounded-2xl p-5 shadow-sm">
-        <div className="flex items-center gap-2 mb-4">
-          <Landmark className="w-6 h-6 text-[#4361EE]" />
-          <p className="font-black text-[#1E293B]">تفاصيل التحويل البنكي</p>
-        </div>
-        <div className="space-y-3">
-          {[
-            { label: "البنك",   value: "CIH Bank" },
-            { label: "الحساب", value: "XXXXXXXXXXXX" },
-            { label: "الاسم",  value: "WinWinCOD" },
-          ].map((row) => (
-            <div key={row.label} className="flex items-center justify-between bg-[#F8FAFC] rounded-xl px-4 py-3">
-              <span className="text-slate-400 text-sm font-bold">{row.label}</span>
-              <span className="font-black text-[#1E293B] text-sm font-mono">{row.value}</span>
-            </div>
-          ))}
-        </div>
-        <p className="text-xs text-slate-400 mt-3 text-center leading-relaxed">
-          بعد التحويل، أرفع وصل الدفع في صفحة المحفظة وسيتم تأكيد الشحن خلال 24 ساعة
-        </p>
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-2">
+        <h3 className="font-bold">المبلغ المطلوب يعتمد على طلباتك</h3>
+        <p>راجع تكلفة المنتجات ورسوم الدفعة الفعلية قبل الدفع. لا يوجد مبلغ ثابت يضمن كفاية الرصيد لكل دفعة.</p>
+        <p>استخدم المحفظة لطلب الشحن ومتابعة المراجعة. احصل على تعليمات التحويل المؤكدة من الإدارة قبل إرسال المال؛ لا تحول إلى حساب غير متحقق منه.</p>
+        <p>الدفع لا يعني الإرسال إلى شركة التوصيل. الإرسال يتم عبر إجراء المستودع المصرح به.</p>
       </div>
 
       {/* Action buttons */}

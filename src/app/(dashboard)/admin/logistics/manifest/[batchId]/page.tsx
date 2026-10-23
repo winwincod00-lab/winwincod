@@ -1,5 +1,6 @@
+import { getSessionUser } from '@/lib/api-utils';
 import prisma from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import PrintButton from "@/components/ui/PrintButton"; // سننشئه بالأسفل
 
 // 1. تعريف النوع ليصبح Promise
@@ -8,6 +9,8 @@ interface PageProps {
 }
 
 export default async function ManifestPage({ params }: PageProps) {
+  const user = await getSessionUser();
+  if (!user || user.role !== 'ADMIN') redirect('/login');
   // 2. استخدام await لاستخراج المعرف (هذا هو حل المشكلة)
   const { batchId } = await params;
 

@@ -1,0 +1,3741 @@
+{
+  "models": [
+    {
+      "name": "FiOpeningEvidence",
+      "table": "fi_opening_evidence",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "entityKind",
+          "text"
+        ],
+        [
+          "entityId",
+          "text"
+        ],
+        [
+          "evidenceHash",
+          "text"
+        ],
+        [
+          "approvedBy",
+          "text"
+        ],
+        [
+          "approvedAt",
+          "time"
+        ]
+      ],
+      "unique": [
+        [
+          "entityKind",
+          "entityId"
+        ]
+      ],
+      "indexes": [
+        [
+          "approvedBy"
+        ]
+      ]
+    },
+    {
+      "name": "FiOperation",
+      "table": "fi_operation",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sellerId",
+          "text"
+        ],
+        [
+          "kind",
+          "text"
+        ],
+        [
+          "requestKey",
+          "text"
+        ],
+        [
+          "businessKey",
+          "text"
+        ],
+        [
+          "payloadHash",
+          "text"
+        ],
+        [
+          "policyDecisionId",
+          "text"
+        ],
+        [
+          "actorId",
+          "text"
+        ],
+        [
+          "createdAt",
+          "time"
+        ]
+      ],
+      "unique": [
+        [
+          "id",
+          "sellerId"
+        ],
+        [
+          "sellerId",
+          "kind",
+          "requestKey"
+        ],
+        [
+          "sellerId",
+          "kind",
+          "businessKey"
+        ]
+      ],
+      "indexes": [
+        [
+          "actorId",
+          "createdAt"
+        ],
+        [
+          "sellerId"
+        ],
+        [
+          "actorId"
+        ],
+        [
+          "policyDecisionId"
+        ]
+      ]
+    },
+    {
+      "name": "FiLedgerAccount",
+      "table": "fi_ledger_account",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sellerId",
+          "text?"
+        ],
+        [
+          "kind",
+          "text"
+        ],
+        [
+          "code",
+          "text"
+        ],
+        [
+          "currency",
+          "text"
+        ],
+        [
+          "openingDebitBalance",
+          "money"
+        ],
+        [
+          "openingEvidenceId",
+          "text"
+        ]
+      ],
+      "unique": [
+        [
+          "code"
+        ],
+        [
+          "id",
+          "sellerId"
+        ]
+      ],
+      "indexes": [
+        [
+          "sellerId"
+        ],
+        [
+          "openingEvidenceId"
+        ]
+      ]
+    },
+    {
+      "name": "FiWallet",
+      "table": "fi_wallet",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sellerId",
+          "text"
+        ],
+        [
+          "legacyWalletId",
+          "text"
+        ],
+        [
+          "ledgerAccountId",
+          "text"
+        ],
+        [
+          "openingBalance",
+          "money"
+        ],
+        [
+          "balance",
+          "money"
+        ],
+        [
+          "held",
+          "money"
+        ],
+        [
+          "openingEvidenceId",
+          "text"
+        ],
+        [
+          "activatedAt",
+          "time?"
+        ]
+      ],
+      "unique": [
+        [
+          "id",
+          "sellerId"
+        ],
+        [
+          "sellerId"
+        ],
+        [
+          "legacyWalletId"
+        ],
+        [
+          "ledgerAccountId"
+        ],
+        [
+          "openingEvidenceId"
+        ]
+      ],
+      "indexes": []
+    },
+    {
+      "name": "FiWithdrawalHold",
+      "table": "fi_withdrawal_hold",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sellerId",
+          "text"
+        ],
+        [
+          "walletId",
+          "text"
+        ],
+        [
+          "legacyRequestId",
+          "text"
+        ],
+        [
+          "amount",
+          "money"
+        ],
+        [
+          "remaining",
+          "money"
+        ],
+        [
+          "state",
+          "text"
+        ],
+        [
+          "payoutSnapshot",
+          "text"
+        ],
+        [
+          "createdOperationId",
+          "text"
+        ]
+      ],
+      "unique": [
+        [
+          "id",
+          "sellerId"
+        ],
+        [
+          "legacyRequestId"
+        ],
+        [
+          "createdOperationId"
+        ]
+      ],
+      "indexes": [
+        [
+          "walletId",
+          "state"
+        ],
+        [
+          "sellerId"
+        ],
+        [
+          "walletId",
+          "sellerId"
+        ]
+      ]
+    },
+    {
+      "name": "FiFundingEvidence",
+      "table": "fi_funding_evidence",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sourceAccountRef",
+          "text"
+        ],
+        [
+          "externalRef",
+          "text"
+        ],
+        [
+          "amount",
+          "money"
+        ],
+        [
+          "currency",
+          "text"
+        ],
+        [
+          "evidenceHash",
+          "text"
+        ],
+        [
+          "verifiedBy",
+          "text"
+        ],
+        [
+          "verifiedAt",
+          "time"
+        ]
+      ],
+      "unique": [
+        [
+          "sourceAccountRef",
+          "externalRef"
+        ]
+      ],
+      "indexes": [
+        [
+          "verifiedBy"
+        ]
+      ]
+    },
+    {
+      "name": "FiFundingClaim",
+      "table": "fi_funding_claim",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sellerId",
+          "text"
+        ],
+        [
+          "operationId",
+          "text"
+        ],
+        [
+          "evidenceId",
+          "text"
+        ],
+        [
+          "legacyDepositId",
+          "text?"
+        ]
+      ],
+      "unique": [
+        [
+          "operationId"
+        ],
+        [
+          "evidenceId"
+        ],
+        [
+          "legacyDepositId"
+        ]
+      ],
+      "indexes": [
+        [
+          "sellerId"
+        ]
+      ]
+    },
+    {
+      "name": "FiJournal",
+      "table": "fi_journal",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sellerId",
+          "text"
+        ],
+        [
+          "operationId",
+          "text"
+        ],
+        [
+          "settlementMatchId",
+          "text?"
+        ],
+        [
+          "currency",
+          "text"
+        ],
+        [
+          "createdAt",
+          "time"
+        ]
+      ],
+      "unique": [
+        [
+          "id",
+          "sellerId"
+        ],
+        [
+          "operationId"
+        ],
+        [
+          "settlementMatchId"
+        ]
+      ],
+      "indexes": [
+        [
+          "sellerId"
+        ]
+      ]
+    },
+    {
+      "name": "FiPosting",
+      "table": "fi_posting",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sellerId",
+          "text"
+        ],
+        [
+          "journalId",
+          "text"
+        ],
+        [
+          "accountId",
+          "text"
+        ],
+        [
+          "amount",
+          "money"
+        ],
+        [
+          "reversalOfId",
+          "text?"
+        ]
+      ],
+      "unique": [],
+      "indexes": [
+        [
+          "journalId"
+        ],
+        [
+          "accountId"
+        ],
+        [
+          "reversalOfId"
+        ],
+        [
+          "sellerId"
+        ]
+      ]
+    },
+    {
+      "name": "FiWalletEvent",
+      "table": "fi_wallet_event",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sellerId",
+          "text"
+        ],
+        [
+          "operationId",
+          "text"
+        ],
+        [
+          "walletId",
+          "text"
+        ],
+        [
+          "kind",
+          "text"
+        ],
+        [
+          "cashDelta",
+          "money"
+        ],
+        [
+          "heldDelta",
+          "money"
+        ],
+        [
+          "holdId",
+          "text?"
+        ],
+        [
+          "journalId",
+          "text?"
+        ],
+        [
+          "createdAt",
+          "time"
+        ]
+      ],
+      "unique": [
+        [
+          "walletId",
+          "operationId"
+        ],
+        [
+          "journalId"
+        ]
+      ],
+      "indexes": [
+        [
+          "walletId",
+          "createdAt"
+        ],
+        [
+          "holdId"
+        ],
+        [
+          "sellerId"
+        ],
+        [
+          "walletId",
+          "sellerId"
+        ],
+        [
+          "operationId",
+          "sellerId"
+        ]
+      ]
+    },
+    {
+      "name": "FiOrderLine",
+      "table": "fi_order_line",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sellerId",
+          "text"
+        ],
+        [
+          "legacyOrderId",
+          "text"
+        ],
+        [
+          "productId",
+          "text"
+        ],
+        [
+          "quantity",
+          "int"
+        ],
+        [
+          "createdOperationId",
+          "text?"
+        ]
+      ],
+      "unique": [
+        [
+          "legacyOrderId"
+        ],
+        [
+          "id",
+          "sellerId"
+        ],
+        [
+          "id",
+          "sellerId",
+          "productId"
+        ]
+      ],
+      "indexes": [
+        [
+          "sellerId"
+        ],
+        [
+          "productId"
+        ],
+        [
+          "createdOperationId",
+          "sellerId"
+        ]
+      ]
+    },
+    {
+      "name": "FiCostSnapshot",
+      "table": "fi_cost_snapshot",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sellerId",
+          "text"
+        ],
+        [
+          "lineId",
+          "text"
+        ],
+        [
+          "version",
+          "int"
+        ],
+        [
+          "source",
+          "text"
+        ],
+        [
+          "sellerUnitCost",
+          "money?"
+        ],
+        [
+          "supplierUnitCost",
+          "money?"
+        ],
+        [
+          "currency",
+          "text"
+        ],
+        [
+          "evidenceHash",
+          "text?"
+        ],
+        [
+          "operationId",
+          "text?"
+        ],
+        [
+          "capturedAt",
+          "time?"
+        ]
+      ],
+      "unique": [
+        [
+          "lineId",
+          "version"
+        ],
+        [
+          "id",
+          "sellerId",
+          "lineId"
+        ]
+      ],
+      "indexes": [
+        [
+          "sellerId"
+        ],
+        [
+          "lineId",
+          "sellerId"
+        ],
+        [
+          "operationId",
+          "sellerId"
+        ]
+      ]
+    },
+    {
+      "name": "FiCostRecognition",
+      "table": "fi_cost_recognition",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sellerId",
+          "text"
+        ],
+        [
+          "lineId",
+          "text"
+        ],
+        [
+          "snapshotId",
+          "text"
+        ],
+        [
+          "operationId",
+          "text"
+        ],
+        [
+          "quantityDelta",
+          "int"
+        ],
+        [
+          "basis",
+          "text"
+        ],
+        [
+          "policyApprovalRef",
+          "text"
+        ],
+        [
+          "reversalOfId",
+          "text?"
+        ],
+        [
+          "dispositionId",
+          "text?"
+        ]
+      ],
+      "unique": [
+        [
+          "operationId"
+        ]
+      ],
+      "indexes": [
+        [
+          "lineId"
+        ],
+        [
+          "reversalOfId"
+        ],
+        [
+          "sellerId"
+        ],
+        [
+          "snapshotId",
+          "sellerId",
+          "lineId"
+        ],
+        [
+          "dispositionId",
+          "sellerId"
+        ],
+        [
+          "policyApprovalRef"
+        ]
+      ]
+    },
+    {
+      "name": "FiWarehouseGrant",
+      "table": "fi_warehouse_grant",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "actorId",
+          "text"
+        ],
+        [
+          "capability",
+          "text"
+        ],
+        [
+          "approvedBy",
+          "text"
+        ],
+        [
+          "evidenceHash",
+          "text"
+        ],
+        [
+          "createdAt",
+          "time"
+        ]
+      ],
+      "unique": [],
+      "indexes": [
+        [
+          "actorId",
+          "capability"
+        ],
+        [
+          "actorId"
+        ],
+        [
+          "approvedBy"
+        ]
+      ]
+    },
+    {
+      "name": "FiGrantRevocation",
+      "table": "fi_grant_revocation",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "grantId",
+          "text"
+        ],
+        [
+          "actorId",
+          "text"
+        ],
+        [
+          "reason",
+          "text"
+        ],
+        [
+          "createdAt",
+          "time"
+        ]
+      ],
+      "unique": [
+        [
+          "grantId"
+        ]
+      ],
+      "indexes": [
+        [
+          "actorId"
+        ]
+      ]
+    },
+    {
+      "name": "FiStockOperation",
+      "table": "fi_stock_operation",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sellerId",
+          "text?"
+        ],
+        [
+          "actorId",
+          "text"
+        ],
+        [
+          "kind",
+          "text"
+        ],
+        [
+          "requestKey",
+          "text"
+        ],
+        [
+          "businessKey",
+          "text"
+        ],
+        [
+          "payloadHash",
+          "text"
+        ],
+        [
+          "reason",
+          "text"
+        ],
+        [
+          "financialOperationId",
+          "text?"
+        ],
+        [
+          "grantId",
+          "text?"
+        ],
+        [
+          "evidenceHash",
+          "text?"
+        ],
+        [
+          "createdAt",
+          "time"
+        ]
+      ],
+      "unique": [
+        [
+          "id",
+          "sellerId"
+        ],
+        [
+          "actorId",
+          "requestKey"
+        ],
+        [
+          "kind",
+          "businessKey"
+        ],
+        [
+          "financialOperationId"
+        ]
+      ],
+      "indexes": [
+        [
+          "sellerId"
+        ],
+        [
+          "actorId"
+        ],
+        [
+          "grantId"
+        ]
+      ]
+    },
+    {
+      "name": "FiStockBalance",
+      "table": "fi_stock_balance",
+      "fields": [
+        [
+          "productId",
+          "id"
+        ],
+        [
+          "openingAvailable",
+          "int"
+        ],
+        [
+          "available",
+          "int"
+        ],
+        [
+          "reserved",
+          "int"
+        ],
+        [
+          "inTransit",
+          "int"
+        ],
+        [
+          "returnedPendingInspection",
+          "int"
+        ],
+        [
+          "damaged",
+          "int"
+        ],
+        [
+          "openingEvidenceId",
+          "text"
+        ],
+        [
+          "activatedAt",
+          "time?"
+        ]
+      ],
+      "unique": [
+        [
+          "openingEvidenceId"
+        ]
+      ],
+      "indexes": []
+    },
+    {
+      "name": "FiReservation",
+      "table": "fi_reservation",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sellerId",
+          "text"
+        ],
+        [
+          "lineId",
+          "text"
+        ],
+        [
+          "productId",
+          "text"
+        ],
+        [
+          "units",
+          "int"
+        ],
+        [
+          "remaining",
+          "int"
+        ],
+        [
+          "dispatched",
+          "int"
+        ],
+        [
+          "released",
+          "int"
+        ],
+        [
+          "operationId",
+          "text"
+        ]
+      ],
+      "unique": [
+        [
+          "lineId"
+        ],
+        [
+          "id",
+          "sellerId",
+          "productId"
+        ]
+      ],
+      "indexes": [
+        [
+          "productId"
+        ],
+        [
+          "sellerId"
+        ],
+        [
+          "operationId",
+          "sellerId"
+        ]
+      ]
+    },
+    {
+      "name": "FiCarrierAccount",
+      "table": "fi_carrier_account",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "carrier",
+          "text"
+        ],
+        [
+          "accountRef",
+          "text"
+        ]
+      ],
+      "unique": [
+        [
+          "carrier",
+          "accountRef"
+        ]
+      ],
+      "indexes": []
+    },
+    {
+      "name": "FiShipment",
+      "table": "fi_shipment",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sellerId",
+          "text"
+        ],
+        [
+          "carrierAccountId",
+          "text?"
+        ],
+        [
+          "externalRef",
+          "text?"
+        ],
+        [
+          "trackingRef",
+          "text?"
+        ],
+        [
+          "expectedCod",
+          "money?"
+        ],
+        [
+          "currency",
+          "text"
+        ],
+        [
+          "operationId",
+          "text"
+        ]
+      ],
+      "unique": [
+        [
+          "id",
+          "sellerId"
+        ],
+        [
+          "carrierAccountId",
+          "externalRef"
+        ]
+      ],
+      "indexes": [
+        [
+          "sellerId"
+        ],
+        [
+          "carrierAccountId"
+        ],
+        [
+          "operationId",
+          "sellerId"
+        ]
+      ]
+    },
+    {
+      "name": "FiShipmentItem",
+      "table": "fi_shipment_item",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sellerId",
+          "text"
+        ],
+        [
+          "shipmentId",
+          "text"
+        ],
+        [
+          "reservationId",
+          "text"
+        ],
+        [
+          "lineId",
+          "text"
+        ],
+        [
+          "productId",
+          "text"
+        ],
+        [
+          "units",
+          "int"
+        ],
+        [
+          "delivered",
+          "int"
+        ],
+        [
+          "returned",
+          "int"
+        ],
+        [
+          "operationId",
+          "text"
+        ]
+      ],
+      "unique": [
+        [
+          "id",
+          "sellerId"
+        ],
+        [
+          "operationId",
+          "lineId"
+        ]
+      ],
+      "indexes": [
+        [
+          "reservationId"
+        ],
+        [
+          "sellerId"
+        ],
+        [
+          "shipmentId",
+          "sellerId"
+        ],
+        [
+          "lineId",
+          "sellerId",
+          "productId"
+        ],
+        [
+          "operationId",
+          "sellerId"
+        ]
+      ]
+    },
+    {
+      "name": "FiReturnReceipt",
+      "table": "fi_return_receipt",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sellerId",
+          "text"
+        ],
+        [
+          "shipmentItemId",
+          "text"
+        ],
+        [
+          "units",
+          "int"
+        ],
+        [
+          "warehouseRef",
+          "text"
+        ],
+        [
+          "evidenceHash",
+          "text"
+        ],
+        [
+          "operationId",
+          "text"
+        ]
+      ],
+      "unique": [
+        [
+          "id",
+          "sellerId"
+        ],
+        [
+          "warehouseRef"
+        ],
+        [
+          "operationId"
+        ]
+      ],
+      "indexes": [
+        [
+          "shipmentItemId"
+        ],
+        [
+          "sellerId"
+        ]
+      ]
+    },
+    {
+      "name": "FiDisposition",
+      "table": "fi_disposition",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sellerId",
+          "text"
+        ],
+        [
+          "receiptId",
+          "text"
+        ],
+        [
+          "kind",
+          "text"
+        ],
+        [
+          "units",
+          "int"
+        ],
+        [
+          "moved",
+          "int"
+        ],
+        [
+          "operationId",
+          "text"
+        ]
+      ],
+      "unique": [
+        [
+          "id",
+          "sellerId"
+        ],
+        [
+          "operationId"
+        ]
+      ],
+      "indexes": [
+        [
+          "receiptId"
+        ],
+        [
+          "sellerId"
+        ]
+      ]
+    },
+    {
+      "name": "FiStockMovement",
+      "table": "fi_stock_movement",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "operationId",
+          "text"
+        ],
+        [
+          "sequence",
+          "int"
+        ],
+        [
+          "sellerId",
+          "text?"
+        ],
+        [
+          "productId",
+          "text"
+        ],
+        [
+          "fromBucket",
+          "text"
+        ],
+        [
+          "toBucket",
+          "text"
+        ],
+        [
+          "units",
+          "int"
+        ],
+        [
+          "reservationId",
+          "text?"
+        ],
+        [
+          "shipmentItemId",
+          "text?"
+        ],
+        [
+          "receiptId",
+          "text?"
+        ],
+        [
+          "dispositionId",
+          "text?"
+        ],
+        [
+          "createdAt",
+          "time"
+        ]
+      ],
+      "unique": [
+        [
+          "operationId",
+          "sequence"
+        ]
+      ],
+      "indexes": [
+        [
+          "productId",
+          "createdAt"
+        ],
+        [
+          "reservationId"
+        ],
+        [
+          "shipmentItemId"
+        ],
+        [
+          "receiptId"
+        ],
+        [
+          "dispositionId"
+        ],
+        [
+          "sellerId"
+        ],
+        [
+          "operationId"
+        ],
+        [
+          "productId"
+        ]
+      ]
+    },
+    {
+      "name": "FiCarrierObservation",
+      "table": "fi_carrier_observation",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "carrierAccountId",
+          "text"
+        ],
+        [
+          "externalEventKey",
+          "text"
+        ],
+        [
+          "payloadHash",
+          "text"
+        ],
+        [
+          "evidenceRef",
+          "text"
+        ],
+        [
+          "observedAt",
+          "time"
+        ]
+      ],
+      "unique": [
+        [
+          "carrierAccountId",
+          "externalEventKey"
+        ]
+      ],
+      "indexes": [
+        [
+          "carrierAccountId"
+        ]
+      ]
+    },
+    {
+      "name": "FiSettlementStatement",
+      "table": "fi_settlement_statement",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "carrierAccountId",
+          "text"
+        ],
+        [
+          "statementRef",
+          "text"
+        ],
+        [
+          "currency",
+          "text"
+        ],
+        [
+          "evidenceHash",
+          "text"
+        ],
+        [
+          "receivedAt",
+          "time"
+        ]
+      ],
+      "unique": [
+        [
+          "carrierAccountId",
+          "statementRef"
+        ],
+        [
+          "id",
+          "carrierAccountId"
+        ]
+      ],
+      "indexes": [
+        [
+          "carrierAccountId"
+        ]
+      ]
+    },
+    {
+      "name": "FiSettlementLine",
+      "table": "fi_settlement_line",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "statementId",
+          "text"
+        ],
+        [
+          "carrierAccountId",
+          "text"
+        ],
+        [
+          "externalLineRef",
+          "text"
+        ],
+        [
+          "externalShipmentRef",
+          "text?"
+        ],
+        [
+          "grossCod",
+          "money"
+        ],
+        [
+          "carrierFee",
+          "money"
+        ],
+        [
+          "adjustment",
+          "money"
+        ],
+        [
+          "netRemittance",
+          "money"
+        ],
+        [
+          "currency",
+          "text"
+        ]
+      ],
+      "unique": [
+        [
+          "statementId",
+          "externalLineRef"
+        ],
+        [
+          "id",
+          "carrierAccountId"
+        ]
+      ],
+      "indexes": [
+        [
+          "carrierAccountId",
+          "externalShipmentRef"
+        ],
+        [
+          "statementId",
+          "carrierAccountId"
+        ]
+      ]
+    },
+    {
+      "name": "FiSettlementMatch",
+      "table": "fi_settlement_match",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sellerId",
+          "text"
+        ],
+        [
+          "shipmentId",
+          "text"
+        ],
+        [
+          "settlementLineId",
+          "text"
+        ],
+        [
+          "carrierAccountId",
+          "text"
+        ],
+        [
+          "termsId",
+          "text"
+        ],
+        [
+          "operationId",
+          "text"
+        ],
+        [
+          "policyApprovalRef",
+          "text"
+        ]
+      ],
+      "unique": [
+        [
+          "id",
+          "sellerId"
+        ],
+        [
+          "operationId"
+        ]
+      ],
+      "indexes": [
+        [
+          "sellerId"
+        ],
+        [
+          "shipmentId",
+          "sellerId"
+        ],
+        [
+          "settlementLineId",
+          "carrierAccountId"
+        ],
+        [
+          "policyApprovalRef"
+        ],
+        [
+          "termsId",
+          "sellerId",
+          "shipmentId"
+        ]
+      ]
+    },
+    {
+      "name": "FiRemittance",
+      "table": "fi_remittance",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sourceAccountRef",
+          "text"
+        ],
+        [
+          "bankReference",
+          "text"
+        ],
+        [
+          "amount",
+          "money"
+        ],
+        [
+          "currency",
+          "text"
+        ],
+        [
+          "evidenceHash",
+          "text"
+        ],
+        [
+          "verifiedBy",
+          "text"
+        ],
+        [
+          "receivedAt",
+          "time"
+        ]
+      ],
+      "unique": [
+        [
+          "sourceAccountRef",
+          "bankReference"
+        ]
+      ],
+      "indexes": [
+        [
+          "verifiedBy"
+        ]
+      ]
+    },
+    {
+      "name": "FiRemittanceAllocation",
+      "table": "fi_remittance_allocation",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "remittanceId",
+          "text"
+        ],
+        [
+          "statementId",
+          "text"
+        ],
+        [
+          "amount",
+          "money"
+        ],
+        [
+          "operationId",
+          "text"
+        ]
+      ],
+      "unique": [
+        [
+          "remittanceId",
+          "statementId"
+        ],
+        [
+          "operationId"
+        ]
+      ],
+      "indexes": [
+        [
+          "statementId"
+        ],
+        [
+          "remittanceId"
+        ]
+      ]
+    },
+    {
+      "name": "FiPayoutIntent",
+      "table": "fi_payout_intent",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sellerId",
+          "text"
+        ],
+        [
+          "holdId",
+          "text"
+        ],
+        [
+          "operationId",
+          "text"
+        ],
+        [
+          "state",
+          "text"
+        ],
+        [
+          "externalRequestKey",
+          "text"
+        ],
+        [
+          "createdAt",
+          "time"
+        ]
+      ],
+      "unique": [
+        [
+          "holdId"
+        ],
+        [
+          "operationId"
+        ],
+        [
+          "externalRequestKey"
+        ]
+      ],
+      "indexes": [
+        [
+          "sellerId"
+        ]
+      ]
+    },
+    {
+      "name": "FiPayoutEvidence",
+      "table": "fi_payout_evidence",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sellerId",
+          "text"
+        ],
+        [
+          "holdId",
+          "text"
+        ],
+        [
+          "sourceAccountRef",
+          "text"
+        ],
+        [
+          "bankReference",
+          "text"
+        ],
+        [
+          "amount",
+          "money"
+        ],
+        [
+          "currency",
+          "text"
+        ],
+        [
+          "evidenceHash",
+          "text"
+        ],
+        [
+          "verifiedBy",
+          "text"
+        ],
+        [
+          "verifiedAt",
+          "time"
+        ]
+      ],
+      "unique": [
+        [
+          "holdId"
+        ],
+        [
+          "sourceAccountRef",
+          "bankReference"
+        ]
+      ],
+      "indexes": [
+        [
+          "sellerId"
+        ],
+        [
+          "verifiedBy"
+        ]
+      ]
+    },
+    {
+      "name": "FiPayoutEvent",
+      "table": "fi_payout_event",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "intentId",
+          "text"
+        ],
+        [
+          "operationId",
+          "text"
+        ],
+        [
+          "sequence",
+          "int"
+        ],
+        [
+          "state",
+          "text"
+        ],
+        [
+          "evidenceClass",
+          "text"
+        ],
+        [
+          "evidenceRef",
+          "text"
+        ],
+        [
+          "createdAt",
+          "time"
+        ]
+      ],
+      "unique": [
+        [
+          "operationId"
+        ],
+        [
+          "intentId",
+          "sequence"
+        ]
+      ],
+      "indexes": [
+        [
+          "intentId"
+        ]
+      ]
+    },
+    {
+      "name": "FiSettlementLink",
+      "table": "fi_settlement_link",
+      "fields": [
+        [
+          "shipmentId",
+          "id"
+        ],
+        [
+          "sellerId",
+          "text"
+        ],
+        [
+          "settlementLineId",
+          "text"
+        ],
+        [
+          "matchId",
+          "text"
+        ]
+      ],
+      "unique": [
+        [
+          "settlementLineId"
+        ],
+        [
+          "matchId"
+        ]
+      ],
+      "indexes": [
+        [
+          "sellerId"
+        ]
+      ]
+    },
+    {
+      "name": "FiMatchRevocation",
+      "table": "fi_match_revocation",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "matchId",
+          "text"
+        ],
+        [
+          "operationId",
+          "text"
+        ],
+        [
+          "reason",
+          "text"
+        ],
+        [
+          "createdAt",
+          "time"
+        ]
+      ],
+      "unique": [
+        [
+          "matchId"
+        ],
+        [
+          "operationId"
+        ]
+      ],
+      "indexes": []
+    },
+    {
+      "name": "FiOperationReceipt",
+      "table": "fi_operation_receipt",
+      "fields": [
+        [
+          "operationId",
+          "id"
+        ],
+        [
+          "result",
+          "json"
+        ],
+        [
+          "createdAt",
+          "time"
+        ]
+      ],
+      "unique": [],
+      "indexes": []
+    },
+    {
+      "name": "FiStockOperationReceipt",
+      "table": "fi_stock_operation_receipt",
+      "fields": [
+        [
+          "operationId",
+          "id"
+        ],
+        [
+          "result",
+          "json"
+        ],
+        [
+          "createdAt",
+          "time"
+        ]
+      ],
+      "unique": [],
+      "indexes": []
+    },
+    {
+      "name": "FiPolicyDecision",
+      "table": "fi_policy_decision",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "code",
+          "text"
+        ],
+        [
+          "version",
+          "int"
+        ],
+        [
+          "ownerId",
+          "text"
+        ],
+        [
+          "evidenceHash",
+          "text"
+        ],
+        [
+          "terms",
+          "json"
+        ],
+        [
+          "approvedAt",
+          "time"
+        ]
+      ],
+      "unique": [
+        [
+          "code",
+          "version"
+        ]
+      ],
+      "indexes": [
+        [
+          "ownerId"
+        ]
+      ]
+    },
+    {
+      "name": "FiPolicyRevocation",
+      "table": "fi_policy_revocation",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "decisionId",
+          "text"
+        ],
+        [
+          "revokedBy",
+          "text"
+        ],
+        [
+          "reason",
+          "text"
+        ],
+        [
+          "createdAt",
+          "time"
+        ]
+      ],
+      "unique": [
+        [
+          "decisionId"
+        ]
+      ],
+      "indexes": [
+        [
+          "revokedBy"
+        ]
+      ]
+    },
+    {
+      "name": "FiWalletEntitlement",
+      "table": "fi_wallet_entitlement",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sellerId",
+          "text"
+        ],
+        [
+          "operationId",
+          "text"
+        ],
+        [
+          "amount",
+          "money"
+        ],
+        [
+          "policyApprovalRef",
+          "text"
+        ],
+        [
+          "approvedBy",
+          "text"
+        ],
+        [
+          "evidenceHash",
+          "text"
+        ],
+        [
+          "settlementMatchId",
+          "text?"
+        ],
+        [
+          "dispositionId",
+          "text?"
+        ],
+        [
+          "quantity",
+          "int?"
+        ]
+      ],
+      "unique": [
+        [
+          "operationId"
+        ],
+        [
+          "settlementMatchId"
+        ],
+        [
+          "dispositionId"
+        ]
+      ],
+      "indexes": [
+        [
+          "sellerId"
+        ],
+        [
+          "policyApprovalRef"
+        ],
+        [
+          "approvedBy"
+        ]
+      ]
+    },
+    {
+      "name": "FiLineCharge",
+      "table": "fi_line_charge",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sellerId",
+          "text"
+        ],
+        [
+          "lineId",
+          "text"
+        ],
+        [
+          "snapshotId",
+          "text"
+        ],
+        [
+          "operationId",
+          "text"
+        ],
+        [
+          "unitCharge",
+          "money"
+        ],
+        [
+          "orderFee",
+          "money"
+        ]
+      ],
+      "unique": [
+        [
+          "lineId"
+        ],
+        [
+          "operationId",
+          "lineId"
+        ]
+      ],
+      "indexes": [
+        [
+          "sellerId"
+        ],
+        [
+          "snapshotId",
+          "sellerId",
+          "lineId"
+        ],
+        [
+          "operationId",
+          "sellerId"
+        ]
+      ]
+    },
+    {
+      "name": "FiShipmentTerms",
+      "table": "fi_shipment_terms",
+      "fields": [
+        [
+          "id",
+          "id"
+        ],
+        [
+          "sellerId",
+          "text"
+        ],
+        [
+          "shipmentId",
+          "text"
+        ],
+        [
+          "version",
+          "int"
+        ],
+        [
+          "source",
+          "text"
+        ],
+        [
+          "expectedCod",
+          "money?"
+        ],
+        [
+          "currency",
+          "text"
+        ],
+        [
+          "evidenceHash",
+          "text"
+        ],
+        [
+          "policyApprovalRef",
+          "text"
+        ],
+        [
+          "operationId",
+          "text"
+        ],
+        [
+          "createdAt",
+          "time"
+        ]
+      ],
+      "unique": [
+        [
+          "shipmentId",
+          "version"
+        ],
+        [
+          "id",
+          "sellerId",
+          "shipmentId"
+        ],
+        [
+          "operationId"
+        ]
+      ],
+      "indexes": [
+        [
+          "sellerId"
+        ],
+        [
+          "shipmentId",
+          "sellerId"
+        ],
+        [
+          "policyApprovalRef"
+        ]
+      ]
+    }
+  ],
+  "foreignKeys": [
+    {
+      "child": "FiOperation",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_operation_seller_fk"
+    },
+    {
+      "child": "FiLedgerAccount",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_ledger_account_seller_fk"
+    },
+    {
+      "child": "FiWallet",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_wallet_seller_fk"
+    },
+    {
+      "child": "FiWithdrawalHold",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_withdrawal_hold_seller_fk"
+    },
+    {
+      "child": "FiFundingClaim",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_funding_claim_seller_fk"
+    },
+    {
+      "child": "FiJournal",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_journal_seller_fk"
+    },
+    {
+      "child": "FiPosting",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_posting_seller_fk"
+    },
+    {
+      "child": "FiWalletEvent",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_wallet_event_seller_fk"
+    },
+    {
+      "child": "FiOrderLine",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_order_line_seller_fk"
+    },
+    {
+      "child": "FiCostSnapshot",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_cost_snapshot_seller_fk"
+    },
+    {
+      "child": "FiCostRecognition",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_cost_recognition_seller_fk"
+    },
+    {
+      "child": "FiStockOperation",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_stock_operation_seller_fk"
+    },
+    {
+      "child": "FiReservation",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_reservation_seller_fk"
+    },
+    {
+      "child": "FiShipment",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_shipment_seller_fk"
+    },
+    {
+      "child": "FiShipmentItem",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_shipment_item_seller_fk"
+    },
+    {
+      "child": "FiReturnReceipt",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_return_receipt_seller_fk"
+    },
+    {
+      "child": "FiDisposition",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_disposition_seller_fk"
+    },
+    {
+      "child": "FiStockMovement",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_stock_movement_seller_fk"
+    },
+    {
+      "child": "FiSettlementMatch",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_settlement_match_seller_fk"
+    },
+    {
+      "child": "FiPayoutIntent",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_payout_intent_seller_fk"
+    },
+    {
+      "child": "FiPayoutEvidence",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_payout_evidence_seller_fk"
+    },
+    {
+      "child": "FiSettlementLink",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_settlement_link_seller_fk"
+    },
+    {
+      "child": "FiWalletEntitlement",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_wallet_entitlement_seller_fk"
+    },
+    {
+      "child": "FiLineCharge",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_line_charge_seller_fk"
+    },
+    {
+      "child": "FiShipmentTerms",
+      "fields": [
+        "sellerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_shipment_terms_seller_fk"
+    },
+    {
+      "child": "FiOpeningEvidence",
+      "fields": [
+        "approvedBy"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "FiOpeningEvidence_approvedBy_fk"
+    },
+    {
+      "child": "FiOperation",
+      "fields": [
+        "actorId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "FiOperation_actorId_fk"
+    },
+    {
+      "child": "FiWarehouseGrant",
+      "fields": [
+        "actorId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "FiWarehouseGrant_actorId_fk"
+    },
+    {
+      "child": "FiWarehouseGrant",
+      "fields": [
+        "approvedBy"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "FiWarehouseGrant_approvedBy_fk"
+    },
+    {
+      "child": "FiGrantRevocation",
+      "fields": [
+        "actorId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "FiGrantRevocation_actorId_fk"
+    },
+    {
+      "child": "FiStockOperation",
+      "fields": [
+        "actorId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "FiStockOperation_actorId_fk"
+    },
+    {
+      "child": "FiFundingEvidence",
+      "fields": [
+        "verifiedBy"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "FiFundingEvidence_verifiedBy_fk"
+    },
+    {
+      "child": "FiRemittance",
+      "fields": [
+        "verifiedBy"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "FiRemittance_verifiedBy_fk"
+    },
+    {
+      "child": "FiLedgerAccount",
+      "fields": [
+        "openingEvidenceId"
+      ],
+      "parent": "FiOpeningEvidence",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_account_opening_fk"
+    },
+    {
+      "child": "FiWallet",
+      "fields": [
+        "openingEvidenceId"
+      ],
+      "parent": "FiOpeningEvidence",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_wallet_opening_fk"
+    },
+    {
+      "child": "FiWallet",
+      "fields": [
+        "legacyWalletId"
+      ],
+      "parent": "wallet",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_wallet_legacy_fk"
+    },
+    {
+      "child": "FiWallet",
+      "fields": [
+        "ledgerAccountId",
+        "sellerId"
+      ],
+      "parent": "FiLedgerAccount",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_wallet_account_fk"
+    },
+    {
+      "child": "FiWithdrawalHold",
+      "fields": [
+        "walletId",
+        "sellerId"
+      ],
+      "parent": "FiWallet",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_hold_wallet_fk"
+    },
+    {
+      "child": "FiWithdrawalHold",
+      "fields": [
+        "createdOperationId",
+        "sellerId"
+      ],
+      "parent": "FiOperation",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_hold_operation_fk"
+    },
+    {
+      "child": "FiWithdrawalHold",
+      "fields": [
+        "legacyRequestId"
+      ],
+      "parent": "withdrawalrequest",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_hold_request_fk"
+    },
+    {
+      "child": "FiFundingClaim",
+      "fields": [
+        "operationId",
+        "sellerId"
+      ],
+      "parent": "FiOperation",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_funding_operation_fk"
+    },
+    {
+      "child": "FiFundingClaim",
+      "fields": [
+        "evidenceId"
+      ],
+      "parent": "FiFundingEvidence",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_claim_evidence_fk"
+    },
+    {
+      "child": "FiFundingClaim",
+      "fields": [
+        "legacyDepositId"
+      ],
+      "parent": "depositrequest",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_claim_deposit_fk"
+    },
+    {
+      "child": "FiJournal",
+      "fields": [
+        "operationId",
+        "sellerId"
+      ],
+      "parent": "FiOperation",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_journal_operation_fk"
+    },
+    {
+      "child": "FiJournal",
+      "fields": [
+        "settlementMatchId",
+        "sellerId"
+      ],
+      "parent": "FiSettlementMatch",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_journal_match_fk"
+    },
+    {
+      "child": "FiPosting",
+      "fields": [
+        "journalId",
+        "sellerId"
+      ],
+      "parent": "FiJournal",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_posting_journal_fk"
+    },
+    {
+      "child": "FiPosting",
+      "fields": [
+        "accountId"
+      ],
+      "parent": "FiLedgerAccount",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_posting_account_fk"
+    },
+    {
+      "child": "FiPosting",
+      "fields": [
+        "reversalOfId"
+      ],
+      "parent": "FiPosting",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_posting_reversal_fk"
+    },
+    {
+      "child": "FiWalletEvent",
+      "fields": [
+        "walletId",
+        "sellerId"
+      ],
+      "parent": "FiWallet",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_event_wallet_fk"
+    },
+    {
+      "child": "FiWalletEvent",
+      "fields": [
+        "operationId",
+        "sellerId"
+      ],
+      "parent": "FiOperation",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_event_operation_fk"
+    },
+    {
+      "child": "FiWalletEvent",
+      "fields": [
+        "holdId",
+        "sellerId"
+      ],
+      "parent": "FiWithdrawalHold",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_event_hold_fk"
+    },
+    {
+      "child": "FiWalletEvent",
+      "fields": [
+        "journalId",
+        "sellerId"
+      ],
+      "parent": "FiJournal",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_event_journal_fk"
+    },
+    {
+      "child": "FiOrderLine",
+      "fields": [
+        "legacyOrderId"
+      ],
+      "parent": "order",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_line_legacy_fk"
+    },
+    {
+      "child": "FiOrderLine",
+      "fields": [
+        "productId"
+      ],
+      "parent": "product",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_line_product_fk"
+    },
+    {
+      "child": "FiOrderLine",
+      "fields": [
+        "createdOperationId",
+        "sellerId"
+      ],
+      "parent": "FiOperation",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_line_operation_fk"
+    },
+    {
+      "child": "FiCostSnapshot",
+      "fields": [
+        "lineId",
+        "sellerId"
+      ],
+      "parent": "FiOrderLine",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_snapshot_line_fk"
+    },
+    {
+      "child": "FiCostSnapshot",
+      "fields": [
+        "operationId",
+        "sellerId"
+      ],
+      "parent": "FiOperation",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_snapshot_operation_fk"
+    },
+    {
+      "child": "FiCostRecognition",
+      "fields": [
+        "snapshotId",
+        "sellerId",
+        "lineId"
+      ],
+      "parent": "FiCostSnapshot",
+      "refs": [
+        "id",
+        "sellerId",
+        "lineId"
+      ],
+      "name": "fi_recognition_snapshot_fk"
+    },
+    {
+      "child": "FiCostRecognition",
+      "fields": [
+        "operationId",
+        "sellerId"
+      ],
+      "parent": "FiOperation",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_recognition_operation_fk"
+    },
+    {
+      "child": "FiCostRecognition",
+      "fields": [
+        "reversalOfId"
+      ],
+      "parent": "FiCostRecognition",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_recognition_reversal_fk"
+    },
+    {
+      "child": "FiCostRecognition",
+      "fields": [
+        "dispositionId",
+        "sellerId"
+      ],
+      "parent": "FiDisposition",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_recognition_disposition_fk"
+    },
+    {
+      "child": "FiGrantRevocation",
+      "fields": [
+        "grantId"
+      ],
+      "parent": "FiWarehouseGrant",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_grant_revocation_fk"
+    },
+    {
+      "child": "FiStockOperation",
+      "fields": [
+        "grantId"
+      ],
+      "parent": "FiWarehouseGrant",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_stock_grant_fk"
+    },
+    {
+      "child": "FiStockOperation",
+      "fields": [
+        "financialOperationId",
+        "sellerId"
+      ],
+      "parent": "FiOperation",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_stock_financial_fk"
+    },
+    {
+      "child": "FiStockBalance",
+      "fields": [
+        "productId"
+      ],
+      "parent": "product",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_stock_product_fk"
+    },
+    {
+      "child": "FiStockBalance",
+      "fields": [
+        "openingEvidenceId"
+      ],
+      "parent": "FiOpeningEvidence",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_stock_opening_fk"
+    },
+    {
+      "child": "FiReservation",
+      "fields": [
+        "lineId",
+        "sellerId",
+        "productId"
+      ],
+      "parent": "FiOrderLine",
+      "refs": [
+        "id",
+        "sellerId",
+        "productId"
+      ],
+      "name": "fi_reservation_line_fk"
+    },
+    {
+      "child": "FiReservation",
+      "fields": [
+        "operationId",
+        "sellerId"
+      ],
+      "parent": "FiStockOperation",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_reservation_operation_fk"
+    },
+    {
+      "child": "FiShipment",
+      "fields": [
+        "carrierAccountId"
+      ],
+      "parent": "FiCarrierAccount",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_shipment_carrier_fk"
+    },
+    {
+      "child": "FiShipment",
+      "fields": [
+        "operationId",
+        "sellerId"
+      ],
+      "parent": "FiStockOperation",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_shipment_operation_fk"
+    },
+    {
+      "child": "FiShipmentItem",
+      "fields": [
+        "shipmentId",
+        "sellerId"
+      ],
+      "parent": "FiShipment",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_item_shipment_fk"
+    },
+    {
+      "child": "FiShipmentItem",
+      "fields": [
+        "reservationId",
+        "sellerId",
+        "productId"
+      ],
+      "parent": "FiReservation",
+      "refs": [
+        "id",
+        "sellerId",
+        "productId"
+      ],
+      "name": "fi_item_reservation_fk"
+    },
+    {
+      "child": "FiShipmentItem",
+      "fields": [
+        "lineId",
+        "sellerId",
+        "productId"
+      ],
+      "parent": "FiOrderLine",
+      "refs": [
+        "id",
+        "sellerId",
+        "productId"
+      ],
+      "name": "fi_item_line_fk"
+    },
+    {
+      "child": "FiShipmentItem",
+      "fields": [
+        "operationId",
+        "sellerId"
+      ],
+      "parent": "FiStockOperation",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_item_operation_fk"
+    },
+    {
+      "child": "FiReturnReceipt",
+      "fields": [
+        "shipmentItemId",
+        "sellerId"
+      ],
+      "parent": "FiShipmentItem",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_receipt_item_fk"
+    },
+    {
+      "child": "FiReturnReceipt",
+      "fields": [
+        "operationId",
+        "sellerId"
+      ],
+      "parent": "FiStockOperation",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_receipt_operation_fk"
+    },
+    {
+      "child": "FiDisposition",
+      "fields": [
+        "receiptId",
+        "sellerId"
+      ],
+      "parent": "FiReturnReceipt",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_disposition_receipt_fk"
+    },
+    {
+      "child": "FiDisposition",
+      "fields": [
+        "operationId",
+        "sellerId"
+      ],
+      "parent": "FiStockOperation",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_disposition_operation_fk"
+    },
+    {
+      "child": "FiStockMovement",
+      "fields": [
+        "operationId"
+      ],
+      "parent": "FiStockOperation",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_movement_operation_fk"
+    },
+    {
+      "child": "FiStockMovement",
+      "fields": [
+        "productId"
+      ],
+      "parent": "FiStockBalance",
+      "refs": [
+        "productId"
+      ],
+      "name": "fi_movement_product_fk"
+    },
+    {
+      "child": "FiStockMovement",
+      "fields": [
+        "reservationId",
+        "sellerId",
+        "productId"
+      ],
+      "parent": "FiReservation",
+      "refs": [
+        "id",
+        "sellerId",
+        "productId"
+      ],
+      "name": "fi_movement_reservation_fk"
+    },
+    {
+      "child": "FiStockMovement",
+      "fields": [
+        "shipmentItemId",
+        "sellerId"
+      ],
+      "parent": "FiShipmentItem",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_movement_item_fk"
+    },
+    {
+      "child": "FiStockMovement",
+      "fields": [
+        "receiptId",
+        "sellerId"
+      ],
+      "parent": "FiReturnReceipt",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_movement_receipt_fk"
+    },
+    {
+      "child": "FiStockMovement",
+      "fields": [
+        "dispositionId",
+        "sellerId"
+      ],
+      "parent": "FiDisposition",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_movement_disposition_fk"
+    },
+    {
+      "child": "FiCarrierObservation",
+      "fields": [
+        "carrierAccountId"
+      ],
+      "parent": "FiCarrierAccount",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_observation_account_fk"
+    },
+    {
+      "child": "FiSettlementStatement",
+      "fields": [
+        "carrierAccountId"
+      ],
+      "parent": "FiCarrierAccount",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_statement_account_fk"
+    },
+    {
+      "child": "FiSettlementLine",
+      "fields": [
+        "statementId",
+        "carrierAccountId"
+      ],
+      "parent": "FiSettlementStatement",
+      "refs": [
+        "id",
+        "carrierAccountId"
+      ],
+      "name": "fi_settlement_statement_fk"
+    },
+    {
+      "child": "FiSettlementMatch",
+      "fields": [
+        "shipmentId",
+        "sellerId"
+      ],
+      "parent": "FiShipment",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_match_shipment_fk"
+    },
+    {
+      "child": "FiSettlementMatch",
+      "fields": [
+        "settlementLineId",
+        "carrierAccountId"
+      ],
+      "parent": "FiSettlementLine",
+      "refs": [
+        "id",
+        "carrierAccountId"
+      ],
+      "name": "fi_match_settlement_fk"
+    },
+    {
+      "child": "FiSettlementMatch",
+      "fields": [
+        "operationId",
+        "sellerId"
+      ],
+      "parent": "FiOperation",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_match_operation_fk"
+    },
+    {
+      "child": "FiRemittanceAllocation",
+      "fields": [
+        "remittanceId"
+      ],
+      "parent": "FiRemittance",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_allocation_remittance_fk"
+    },
+    {
+      "child": "FiRemittanceAllocation",
+      "fields": [
+        "statementId"
+      ],
+      "parent": "FiSettlementStatement",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_allocation_statement_fk"
+    },
+    {
+      "child": "FiRemittanceAllocation",
+      "fields": [
+        "operationId"
+      ],
+      "parent": "FiOperation",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_allocation_operation_fk"
+    },
+    {
+      "child": "FiPayoutIntent",
+      "fields": [
+        "holdId",
+        "sellerId"
+      ],
+      "parent": "FiWithdrawalHold",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_payout_hold_fk"
+    },
+    {
+      "child": "FiPayoutIntent",
+      "fields": [
+        "operationId",
+        "sellerId"
+      ],
+      "parent": "FiOperation",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_payout_operation_fk"
+    },
+    {
+      "child": "FiPayoutEvidence",
+      "fields": [
+        "holdId",
+        "sellerId"
+      ],
+      "parent": "FiWithdrawalHold",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_payout_evidence_hold_fk"
+    },
+    {
+      "child": "FiPayoutEvidence",
+      "fields": [
+        "verifiedBy"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_payout_evidence_actor_fk"
+    },
+    {
+      "child": "FiPayoutEvent",
+      "fields": [
+        "intentId"
+      ],
+      "parent": "FiPayoutIntent",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_payout_event_intent_fk"
+    },
+    {
+      "child": "FiPayoutEvent",
+      "fields": [
+        "operationId"
+      ],
+      "parent": "FiOperation",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_payout_event_operation_fk"
+    },
+    {
+      "child": "FiSettlementLink",
+      "fields": [
+        "matchId",
+        "sellerId"
+      ],
+      "parent": "FiSettlementMatch",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_active_match_fk"
+    },
+    {
+      "child": "FiSettlementLink",
+      "fields": [
+        "settlementLineId"
+      ],
+      "parent": "FiSettlementLine",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_active_line_fk"
+    },
+    {
+      "child": "FiSettlementLink",
+      "fields": [
+        "shipmentId",
+        "sellerId"
+      ],
+      "parent": "FiShipment",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_active_shipment_fk"
+    },
+    {
+      "child": "FiMatchRevocation",
+      "fields": [
+        "matchId"
+      ],
+      "parent": "FiSettlementMatch",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_match_revocation_fk"
+    },
+    {
+      "child": "FiMatchRevocation",
+      "fields": [
+        "operationId"
+      ],
+      "parent": "FiOperation",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_match_revoke_operation_fk"
+    },
+    {
+      "child": "FiOperationReceipt",
+      "fields": [
+        "operationId"
+      ],
+      "parent": "FiOperation",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_operation_receipt_fk"
+    },
+    {
+      "child": "FiStockOperationReceipt",
+      "fields": [
+        "operationId"
+      ],
+      "parent": "FiStockOperation",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_stock_receipt_fk"
+    },
+    {
+      "child": "FiOperation",
+      "fields": [
+        "policyDecisionId"
+      ],
+      "parent": "FiPolicyDecision",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_operation_policy_fk"
+    },
+    {
+      "child": "FiPolicyDecision",
+      "fields": [
+        "ownerId"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_policy_owner_fk"
+    },
+    {
+      "child": "FiPolicyRevocation",
+      "fields": [
+        "decisionId"
+      ],
+      "parent": "FiPolicyDecision",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_policy_revocation_fk"
+    },
+    {
+      "child": "FiPolicyRevocation",
+      "fields": [
+        "revokedBy"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_policy_revoke_actor_fk"
+    },
+    {
+      "child": "FiCostRecognition",
+      "fields": [
+        "policyApprovalRef"
+      ],
+      "parent": "FiPolicyDecision",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_recognition_policy_fk"
+    },
+    {
+      "child": "FiSettlementMatch",
+      "fields": [
+        "policyApprovalRef"
+      ],
+      "parent": "FiPolicyDecision",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_match_policy_fk"
+    },
+    {
+      "child": "FiWalletEntitlement",
+      "fields": [
+        "operationId",
+        "sellerId"
+      ],
+      "parent": "FiOperation",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_entitlement_operation_fk"
+    },
+    {
+      "child": "FiWalletEntitlement",
+      "fields": [
+        "settlementMatchId",
+        "sellerId"
+      ],
+      "parent": "FiSettlementMatch",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_entitlement_match_fk"
+    },
+    {
+      "child": "FiWalletEntitlement",
+      "fields": [
+        "dispositionId",
+        "sellerId"
+      ],
+      "parent": "FiDisposition",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_entitlement_disposition_fk"
+    },
+    {
+      "child": "FiWalletEntitlement",
+      "fields": [
+        "policyApprovalRef"
+      ],
+      "parent": "FiPolicyDecision",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_entitlement_policy_fk"
+    },
+    {
+      "child": "FiWalletEntitlement",
+      "fields": [
+        "approvedBy"
+      ],
+      "parent": "user",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_entitlement_actor_fk"
+    },
+    {
+      "child": "FiLineCharge",
+      "fields": [
+        "lineId",
+        "sellerId"
+      ],
+      "parent": "FiOrderLine",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_charge_line_fk"
+    },
+    {
+      "child": "FiLineCharge",
+      "fields": [
+        "snapshotId",
+        "sellerId",
+        "lineId"
+      ],
+      "parent": "FiCostSnapshot",
+      "refs": [
+        "id",
+        "sellerId",
+        "lineId"
+      ],
+      "name": "fi_charge_snapshot_fk"
+    },
+    {
+      "child": "FiLineCharge",
+      "fields": [
+        "operationId",
+        "sellerId"
+      ],
+      "parent": "FiOperation",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_charge_operation_fk"
+    },
+    {
+      "child": "FiShipmentTerms",
+      "fields": [
+        "shipmentId",
+        "sellerId"
+      ],
+      "parent": "FiShipment",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_terms_shipment_fk"
+    },
+    {
+      "child": "FiShipmentTerms",
+      "fields": [
+        "operationId",
+        "sellerId"
+      ],
+      "parent": "FiOperation",
+      "refs": [
+        "id",
+        "sellerId"
+      ],
+      "name": "fi_terms_operation_fk"
+    },
+    {
+      "child": "FiShipmentTerms",
+      "fields": [
+        "policyApprovalRef"
+      ],
+      "parent": "FiPolicyDecision",
+      "refs": [
+        "id"
+      ],
+      "name": "fi_terms_policy_fk"
+    },
+    {
+      "child": "FiSettlementMatch",
+      "fields": [
+        "termsId",
+        "sellerId",
+        "shipmentId"
+      ],
+      "parent": "FiShipmentTerms",
+      "refs": [
+        "id",
+        "sellerId",
+        "shipmentId"
+      ],
+      "name": "fi_match_terms_fk"
+    }
+  ]
+}

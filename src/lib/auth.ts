@@ -47,42 +47,33 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        console.log("DATABASE_URL status:", process.env.DATABASE_URL ? "SET" : "EMPTY");
-        console.log("DATABASE_URL prefix:", process.env.DATABASE_URL?.substring(0, 20));
 
         if (!credentials?.email || !credentials?.password) {
-          console.log("[auth] authorize: missing credentials");
           throw new Error("البيانات غير مكتملة");
         }
 
-        console.log("[auth] authorize: attempt for", credentials.email);
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
 
         if (!user) {
-          console.log("[auth] authorize: user not found —", credentials.email);
           throw new Error("البريد أو كلمة المرور خاطئة");
         }
 
         if (!user.isActive) {
-          console.log("[auth] authorize: account inactive —", credentials.email);
           throw new Error("حسابك قيد المراجعة");
         }
 
         if (!user.password) {
-          console.log("[auth] authorize: no password (Google account) —", credentials.email);
           throw new Error("هذا الحساب مرتبط بـ Google، يرجى تسجيل الدخول بـ Google");
         }
 
         const isValid = await bcrypt.compare(credentials.password, user.password);
         if (!isValid) {
-          console.log("[auth] authorize: wrong password —", credentials.email);
           throw new Error("البريد أو كلمة المرور خاطئة");
         }
 
-        console.log("[auth] authorize: success —", credentials.email, user.role);
         return {
           id: user.id,
           name: user.name,

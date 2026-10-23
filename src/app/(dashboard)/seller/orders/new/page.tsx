@@ -14,22 +14,32 @@ function parseFirstImage(images: string): string {
 
 export default function ProductSelectionPage() {
   const [products, setProducts] = useState<any[]>([]);
+  const [error, setError] = useState(false);
+  const [revision, setRevision] = useState(0);
   const [loading, setLoading] = useState(true);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const { items: cart, addItem, openDrawer, totalCount } = useCart();
 
   useEffect(() => {
     axios.get("/api/seller/products")
-      .then(res => setProducts(res.data.products || []))
-      .catch(() => toast.error("فشل تحميل المنتجات"))
+      .then(res => {
+        const preferred = new URLSearchParams(window.location.search).get('productId');
+        const products = res.data.products || [];
+        setProducts(preferred ? [...products].sort((a, b) => Number(b.id === preferred) - Number(a.id === preferred)) : products);
+      })
+      .catch(() => { setError(true); toast.error("فشل تحميل المنتجات"); })
       .finally(() => setLoading(false));
-  }, []);
+  }, [revision]);
 
   const getQty = (id: string) => quantities[id] || 1;
 
   const handleAdd = (product: any) => {
     const qty = getQty(product.id);
-    addItem({
+    const inCart = cart.filter(item => item.productId === product.id).reduce((sum, item) => sum + item.quantity, 0);
+    if (!Number.isSafeInteger(qty) || qty < 1 || qty + inCart > product.stock) {
+      toast.error('المخزون لا يكفي الكمية المختارة مع السلة'); return;
+    }
+    const added = addItem({
       productId: product.id,
       productName: product.name,
       productImage: parseFirstImage(product.images),
@@ -38,6 +48,7 @@ export default function ProductSelectionPage() {
       stock: product.stock,
       quantity: qty,
     });
+    if (!added) { toast.error("تعذر الإضافة. تحقق من المخزون وتوفر السلة"); return; }
     setQuantities(q => ({ ...q, [product.id]: 1 }));
     toast.success("تمت الإضافة للسلة");
   };
@@ -62,7 +73,7 @@ export default function ProductSelectionPage() {
           <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#4361EE] border-t-transparent" />
           <span className="text-[#4361EE] font-bold">جاري التحميل...</span>
         </div>
-      ) : products.length === 0 ? (
+      ) : error ? <div role="alert">فشل تحميل المنتجات. <button className="p-3 underline" onClick={() => { setLoading(true); setError(false); setRevision(n => n + 1); }}>إعادة المحاولة</button></div> : products.length === 0 ? (
         <div className="bg-white rounded-2xl border-2 border-dashed border-[#E2E8F0] p-16 text-center">
           <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
             <Package className="w-7 h-7 text-slate-400" />
@@ -76,7 +87,7 @@ export default function ProductSelectionPage() {
             const qty = getQty(product.id);
             const profit = Number(product.marketPrice) - Number(product.sellerPrice);
             const inCartCount = cart.filter(i => i.productId === product.id).length;
-            const outOfStock = product.stock === 0;
+            const outOfStock = product.stock <= 0;
 
             return (
               <div key={product.id}
@@ -110,7 +121,7 @@ export default function ProductSelectionPage() {
                 <div className="p-4 flex flex-col gap-3 flex-1">
                   <div>
                     <h3 className="font-black text-[#1E293B] text-sm leading-snug line-clamp-2">{product.name}</h3>
-                    <p className="text-xs text-slate-400 mt-0.5">المخزون: {product.stock}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">المخزون الفعلي (غير محجوز): {product.stock}</p>
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -124,7 +135,7 @@ export default function ProductSelectionPage() {
                     <span className={`px-3 py-1.5 rounded-xl text-xs font-black ${
                       profit > 0 ? "bg-green-50 text-green-700" : "bg-slate-50 text-slate-400"
                     }`}>
-                      ربح {profit.toFixed(0)} د.م
+                      هامش قبل الرسوم {profit.toFixed(2)} د.م
                     </span>
                   </div>
 

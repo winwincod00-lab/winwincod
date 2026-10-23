@@ -12,11 +12,14 @@ export async function GET() {
     // جلب كل الدفعات الخاصة بهذا البائع
     const batches = await prisma.orderbatch.findMany({
       where: { sellerId: user.id },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      include: { orders: { select: { id: true, quantity: true, status: true } } }
     });
 
-    return NextResponse.json({ success: true, batches });
-  } catch (error) {
+    const reviews = await prisma.log.findMany({ where: { id: { in: batches.map(batch => 'batch-review:' + batch.id) } }, select: { id: true, action: true } });
+    const decisions = new Map(reviews.map(log => [log.id, log.action]));
+    return NextResponse.json({ success: true, batches: batches.map(batch => ({ ...batch, units: batch.orders.reduce((sum, order) => sum + order.quantity, 0), reviewStatus: decisions.get('batch-review:' + batch.id) === 'BATCH_APPROVE' ? 'APPROVED' : decisions.get('batch-review:' + batch.id) === 'BATCH_REJECT' ? 'REJECTED' : batch.isPaid ? 'LEGACY_PAID' : 'PENDING_REVIEW' })) });
+  } catch {
     return errorResponse("فشل جلب الدفعات", 500);
   }
 }

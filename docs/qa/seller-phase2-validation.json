@@ -1,0 +1,15 @@
+{
+  "baselineSourceErrors": 111,
+  "sourceErrors": 97,
+  "fullRepositoryErrors": 99,
+  "addedFindings": 0,
+  "testsPassed": 71,
+  "testsFailed": 0,
+  "addedRegressionTests": 26,
+  "typeScript": "passed",
+  "liveDatabase": "not executed",
+  "liveBrowser": "not executed",
+  "externalTransport": "blocked in tests",
+  "targetedLint": "passed: zero findings",
+  "diffWhitespace": "passed"
+}

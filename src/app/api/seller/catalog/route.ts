@@ -40,7 +40,7 @@ export async function GET() {
   const myProducts = await prisma.sellerProduct.findMany({
     where: { sellerId: user.id },
     include: {
-      product: true // جلب تفاصيل المنتج كاملة
+      product: { select: { id: true, name: true, images: true, sku: true, sellerPrice: true, marketPrice: true, stock: true } }
     },
     orderBy: { addedAt: 'desc' }
   });

@@ -1,7 +1,7 @@
 "use client";
 
 import { signIn, getSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Clock, AlertTriangle, Package, Truck, DollarSign } from "lucide-react";
 
@@ -18,35 +18,34 @@ export default function LoginPage() {
     if (params.get("error") === "PendingApproval") setPendingApproval(true);
   }, []);
 
+  const loginLock = useRef(false);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    const res = await signIn("credentials", { email, password, redirect: false });
-
-    if (res?.error) {
-      const msg = res.error;
-      if (msg === "حسابك قيد المراجعة") {
-        setError("");
-        setPendingApproval(true);
-      } else if (msg === "CredentialsSignin") {
-        setError("البريد الإلكتروني أو كلمة المرور غير صحيحة");
-      } else {
-        setError(msg);
+    if (loginLock.current) return;
+    loginLock.current = true;
+    setLoading(true); setError(''); setPendingApproval(false);
+    try {
+      const res = await signIn('credentials', { email, password, redirect: false });
+      if (res?.error) {
+        if (res.error === 'حسابك قيد المراجعة') setPendingApproval(true);
+        else setError(res.error === 'CredentialsSignin' ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة' : res.error);
+        return;
       }
-      setLoading(false);
-    } else {
       const session = await getSession();
-      if (session?.user?.role === "CALL_CENTER") window.location.href = "/call-center/dashboard";
-      else if (session?.user?.role === "ADMIN") window.location.href = "/admin/dashboard";
-      else window.location.href = "/seller/dashboard";
-    }
+      const destinations: Record<string, string> = { CALL_CENTER: '/call-center/dashboard', ADMIN: '/admin/dashboard', SELLER: '/seller/dashboard' };
+      const destination = session?.user?.role ? destinations[session.user.role] : undefined;
+      if (!destination) { setError('تعذر التحقق من الجلسة. أعد المحاولة'); return; }
+      window.location.href = destination;
+    } catch { setError('تعذر الاتصال. تحقق من الشبكة وأعد المحاولة'); }
+    finally { loginLock.current = false; setLoading(false); }
   };
 
-  const handleGoogleLogin = () => {
-    setGoogleLoading(true);
-    signIn("google", { callbackUrl: "/auth/redirect" });
+  const handleGoogleLogin = async () => {
+    if (loginLock.current) return;
+    loginLock.current = true; setGoogleLoading(true); setError('');
+    try { await signIn('google', { callbackUrl: '/auth/redirect' }); }
+    catch { setError('تعذر الاتصال. تحقق من الشبكة وأعد المحاولة'); }
+    finally { loginLock.current = false; setGoogleLoading(false); }
   };
 
   return (

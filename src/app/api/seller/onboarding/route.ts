@@ -1,51 +1,25 @@
-import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import { getSessionUser, errorResponse } from "@/lib/api-utils";
-
-export const dynamic = "force-dynamic";
-
+import { NextRequest, NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
+import { getSessionUser, errorResponse } from '@/lib/api-utils';
+import { normalizeMoroccanPhone } from '@/lib/order-input';
+import { z } from 'zod';
+export const dynamic = 'force-dynamic';
+const profile = z.object({
+  name: z.string().trim().min(1, 'الاسم الكامل مطلوب'),
+  phone: z.string().transform(normalizeMoroccanPhone).pipe(z.string().regex(/^0[67]\d{8}$/, 'رقم الهاتف غير صحيح (06 أو 07)')),
+  city: z.string().trim().min(1, 'المدينة مطلوبة'),
+  storeName: z.string().trim().min(1, 'اسم المتجر مطلوب'),
+  storeDescription: z.string().trim().optional(),
+  storeLink: z.string().trim().optional(),
+});
 export async function POST(req: NextRequest) {
   try {
     const user = await getSessionUser();
-    if (!user || user.role !== "SELLER") return errorResponse("غير مصرح", 401);
-
-    const body = await req.json();
-    const { name, phone, city, storeName, storeDescription, storeLink } = body as {
-      name?: string;
-      phone?: string;
-      city?: string;
-      storeName?: string;
-      storeDescription?: string;
-      storeLink?: string;
-    };
-
-    // Basic validation
-    if (!name?.trim())      return errorResponse("الاسم الكامل مطلوب", 400);
-    if (!phone?.trim())     return errorResponse("رقم الهاتف مطلوب", 400);
-    if (!city?.trim())      return errorResponse("المدينة مطلوبة", 400);
-    if (!storeName?.trim()) return errorResponse("اسم المتجر مطلوب", 400);
-
-    const phoneClean = phone.trim().replace(/\s/g, "");
-    if (!/^(06|07)\d{8}$/.test(phoneClean)) {
-      return errorResponse("رقم الهاتف غير صحيح (يجب أن يبدأ بـ 06 أو 07)", 400);
-    }
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        name:                  name.trim(),
-        phone:                 phoneClean,
-        city:                  city.trim(),
-        storeName:             storeName.trim(),
-        storeDescription:      storeDescription?.trim() || null,
-        storeLink:             storeLink?.trim() || null,
-        hasCompletedOnboarding: true,
-      },
-    });
-
+    if (!user || user.role !== 'SELLER') return errorResponse('غير مصرح', 401);
+    const parsed = profile.safeParse(await req.json());
+    if (!parsed.success) return errorResponse(parsed.error.issues[0]?.message ?? 'بيانات غير صالحة', 400);
+    const { storeDescription, storeLink, ...fields } = parsed.data;
+    await prisma.user.update({ where: { id: user.id }, data: { ...fields, storeDescription: storeDescription || null, storeLink: storeLink || null, hasCompletedOnboarding: true } });
     return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error("[onboarding]", err);
-    return errorResponse("خطأ في الخادم", 500);
-  }
+  } catch { return errorResponse('خطأ في الخادم', 500); }
 }

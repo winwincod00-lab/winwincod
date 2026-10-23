@@ -1,11 +1,11 @@
+import { codInput } from '@/lib/order-input';
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSessionUser, errorResponse } from "@/lib/api-utils";
 import { z } from "zod";
-import { chargeWallet } from "@/services/walletService";
 
 const withdrawSchema = z.object({
-  amount: z.coerce.number().positive(),
+  amount: codInput.refine(amount => amount > 0, 'المبلغ يجب أن يكون موجباً'),
   bankName: z.string().min(2, "اسم البنك مطلوب"),
   bankAccountName: z.string().min(3, "الاسم الكامل مطلوب"),
   rib: z.string().length(24, "يجب أن يتكون الـ RIB من 24 رقماً")
@@ -14,7 +14,7 @@ const withdrawSchema = z.object({
 export async function POST(req: Request) {
   try {
     const user = await getSessionUser();
-    if (!user) return errorResponse("غير مصرح", 401);
+    if (!user || user.role !== "SELLER") return errorResponse("غير مصرح", 401);
 
     const body = await req.json();
     const validation = withdrawSchema.safeParse(body);
@@ -56,8 +56,8 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("WITHDRAW_ERROR:", error);
-    return errorResponse(error.message, 500);
+    return errorResponse("تعذر حفظ الطلب؛ راجع السجل قبل إعادة المحاولة", 500);
   }
 }

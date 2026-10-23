@@ -1,0 +1,32 @@
+{
+  "observedRuntimeProvider": "postgresql",
+  "observedRootHistoryProvider": "mysql",
+  "observedDevelopmentHistoryProvider": "postgresql",
+  "deployedHistory": "UNVERIFIED",
+  "files": [
+    {
+      "path": "prisma/schema.prisma",
+      "sha256": "52ae7a1c8719762d89909d97793303133fb9d6ace720945926a8075908d38762"
+    },
+    {
+      "path": "prisma/migrations/migration_lock.toml",
+      "sha256": "55ee6ba436634f186a7e86b271656cd5f508eb6d0f5f47b2ed2a9c39498dc214"
+    },
+    {
+      "path": "prisma/migrations/20260203004609_init/migration.sql",
+      "sha256": "97a528954c9f5c7ff17abf347eccd9d854813722898056384d2ef87314930c92"
+    },
+    {
+      "path": "prisma/postgresql-dev/schema.prisma",
+      "sha256": "10dec0b9e5f95bdc9c63ac9b8ed9969971644a051347aad2666792fc4e9b0d7c"
+    },
+    {
+      "path": "prisma/postgresql-dev/migrations/migration_lock.toml",
+      "sha256": "1db17a8d051aa136110736752c5e1f8b7ed92b6ea8e803112fbbe2497047c210"
+    },
+    {
+      "path": "prisma/postgresql-dev/migrations/20261018000000_initial/migration.sql",
+      "sha256": "9c369f893753c8cb01d2e3416bbe966bee5bf3ccf61d21bfff2dc44e4be95357"
+    }
+  ]
+}

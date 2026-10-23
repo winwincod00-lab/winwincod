@@ -1,0 +1,19 @@
+// REVIEW FRAGMENT ONLY. Merge into integrity-v1 only after loss policy approval.
+// Scalar references are enforced by proposed SQL, not Prisma relationMode.
+// Not an independent schema and not an active migration input.
+model FiInventoryLoss {
+  id             String   @id
+  sellerId       String
+  shipmentItemId String
+  units          Int
+  sourceBucket   String
+  evidenceHash   String
+  reason         String
+  actorId        String
+  policyRef      String
+  operationKey   String   @unique
+  createdAt      DateTime @default(now())
+
+  @@index([shipmentItemId, sellerId])
+  @@map("fi_inventory_loss")
+}

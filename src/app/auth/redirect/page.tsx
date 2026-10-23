@@ -1,17 +1,16 @@
+import { getSessionUser } from '@/lib/api-utils';
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 
 export default async function RedirectPage() {
-  const session = await getServerSession(authOptions);
+  const user = await getSessionUser();
 
-  if (!session) {
+  if (!user) {
     redirect("/login");
   }
 
-  const role = (session.user as any)?.role;
+  const role = user.role;
 
   if (role === "ADMIN") redirect("/admin/dashboard");
   if (role === "CALL_CENTER") redirect("/call-center/dashboard");

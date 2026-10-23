@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionUser, errorResponse } from "@/lib/api-utils";
-import { createBatch } from "@/services/orderService"; // الدالة التي كتبناها في الخطوة 4
+import { assertBatchIds } from "@/lib/order-policy";
+import { createBatch } from "@/services/orderService";
 
 export async function POST(req: Request) {
   try {
@@ -9,8 +10,8 @@ export async function POST(req: Request) {
 
     const { orderIds } = await req.json();
 
-    if (!Array.isArray(orderIds) || orderIds.length < 1) {
-      return errorResponse("يجب اختيار طلب واحد على الأقل", 400);
+    try { assertBatchIds(orderIds); } catch (error) {
+      return errorResponse((error as Error).message, 400);
     }
 
     // استدعاء الخدمة (Business Logic)
@@ -18,7 +19,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, batchId: batch.id });
 
-  } catch (error: any) {
-    return errorResponse(error.message || "فشل إنشاء الدفعة", 500);
+  } catch (error: unknown) {
+    return errorResponse(error instanceof Error ? error.message : "فشل إنشاء الدفعة", 409);
   }
 }

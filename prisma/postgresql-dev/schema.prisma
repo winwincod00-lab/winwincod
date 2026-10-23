@@ -1,0 +1,320 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "postgresql"
+  url          = env("WINWINCOD_SUPABASE_DEV_DATABASE_URL")
+  directUrl    = env("WINWINCOD_SUPABASE_DEV_DIRECT_URL")
+  relationMode = "prisma"
+}
+
+// ====== Models ======
+
+model user {
+  id            String    @id @default(uuid())
+  seqId         Int?
+  name          String
+  email         String    @unique(map: "User_email_key")
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  phone         String?
+  role          user_role @default(SELLER)
+  isActive      Boolean   @default(true)
+  bankName        String?
+  bankAccountName String?
+  rib             String?
+  city            String?
+  storeName       String?
+  storeDescription String?
+  storeLink        String?
+  hasCompletedOnboarding Boolean @default(false)
+  createdAt DateTime  @default(now())
+
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  savedProducts SellerProduct[]
+  wallet       wallet?
+  logs         log[]
+  orders       order[]      @relation("SellerOrders")
+  orderBatches orderbatch[]
+  deposits          depositrequest[]
+  withdrawals       withdrawalrequest[]
+  notifications     Notification[]
+}
+
+model wallet {
+  id      String  @id @default(uuid())
+  userId  String  @unique(map: "Wallet_userId_key")
+  balance Decimal @default(0.0)
+
+  // Relations
+  user         user          @relation(fields: [userId], references: [id])
+  transactions transaction[]
+}
+
+model transaction {
+  id          String           @id @default(uuid())
+  walletId    String
+  amount      Decimal
+  type        transaction_type
+  referenceId String?
+  description String?
+  createdAt   DateTime         @default(now())
+
+  wallet wallet @relation(fields: [walletId], references: [id])
+
+  @@index([walletId], map: "Transaction_walletId_idx")
+}
+
+model log {
+  id        String   @id @default(uuid())
+  userId    String
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+
+  user user @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "Log_userId_idx")
+}
+
+model order {
+  id             String       @id @default(uuid())
+  seqId          Int?
+  sellerId       String
+  
+  // 1. الربط مع الدفعة (Batch)
+  batchId        String?
+  batch          orderbatch?  @relation(fields: [batchId], references: [id])
+
+  // 2. الربط مع المنتج (Product)
+  productId      String?
+  product        product?     @relation(fields: [productId], references: [id])
+
+  customerName   String
+  customerPhone  String
+  address        String
+  city           String
+  productName    String
+  quantity       Int
+  codAmount      Decimal
+  codReceived    Decimal?
+  shippingFee    Decimal      @default(0.0)
+  systemFee      Decimal      @default(0.0)
+  netProfit      Decimal      @default(0.0)
+  status         order_status @default(DRAFT)
+  statusHistory  OrderStatusHistory[]
+  trackingNumber String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  seller user @relation("SellerOrders", fields: [sellerId], references: [id])
+
+  @@index([batchId], map: "Order_batchId_idx")
+  @@index([sellerId], map: "Order_sellerId_idx")
+  @@index([productId], map: "Order_productId_idx")
+}
+
+model orderbatch {
+  id           String   @id @default(uuid())
+  sellerId     String
+  totalAmount  Decimal
+  paymentProof String?
+  isPaid       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  orders       order[]
+
+  seller user @relation(fields: [sellerId], references: [id])
+
+  @@index([sellerId], map: "OrderBatch_sellerId_idx")
+}
+
+model SellerProduct {
+  id        String   @id @default(cuid())
+  sellerId  String
+  productId String
+  addedAt   DateTime @default(now())
+
+  seller    user     @relation(fields: [sellerId], references: [id])
+  product   product  @relation(fields: [productId], references: [id])
+
+  @@unique([sellerId, productId]) 
+  @@index([sellerId])
+}
+
+
+model product {
+  id          String   @id @default(uuid())
+  seqId       Int?
+  supplierId  String
+  name        String
+  description String?  @db.Text
+  images      String   @db.Text
+  sku         String   @unique(map: "Product_sku_key")
+  costPrice   Decimal
+  sellerPrice Decimal
+  marketPrice Decimal
+  stock       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+
+  savedByUsers  SellerProduct[]
+  orders      order[]
+
+  supplier supplier @relation(fields: [supplierId], references: [id])
+
+  @@index([supplierId], map: "Product_supplierId_idx")
+}
+
+model supplier {
+  id          String  @id @default(uuid())
+  name        String
+  contactInfo String?
+
+  products product[]
+}
+
+model depositrequest {
+  id            String        @id @default(cuid())
+  sellerId      String
+  amount        Decimal
+  receiptImage  String?       // رابط صورة الوصل
+  status        deposit_status @default(PENDING)
+  notes         String?    
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  seller        user          @relation(fields: [sellerId], references: [id])
+}
+
+model OrderStatusHistory {
+  id        String       @id @default(uuid())
+  orderId   String
+  status    order_status
+  userId    String       // الشخص الذي غير الحالة
+  createdAt DateTime     @default(now())
+
+  order order @relation(fields: [orderId], references: [id])
+
+  @@index([orderId], map: "OrderStatusHistory_orderId_idx")
+}
+
+model withdrawalrequest {
+  id            String            @id @default(cuid())
+  sellerId      String
+  amount        Decimal
+  receiptImage  String?       // رابط الوصل المرفق من المشرف عند الدفع
+  status        withdrawal_status @default(PENDING)
+  notes         String?    
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  seller        user              @relation(fields: [sellerId], references: [id])
+}
+
+model Notification {
+  id        String            @id @default(cuid())
+  userId    String
+  user      user              @relation(fields: [userId], references: [id])
+  type      notification_type
+  title     String
+  message   String
+  isRead    Boolean           @default(false)
+  link      String?
+  createdAt DateTime          @default(now())
+
+  @@index([userId])
+  @@index([userId, isRead])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user user @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user user @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ====== Enums ======
+enum transaction_type {
+  DEPOSIT
+  ORDER_PAYMENT
+  REFUND_RETURN
+  WITHDRAWAL
+  SHIPPING_PAYMENT
+  DELIVERY_PROFIT
+}
+
+enum deposit_status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum withdrawal_status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum user_role {
+  ADMIN
+  SELLER
+  CALL_CENTER
+}
+
+enum notification_type {
+  ORDER_STATUS
+  DEPOSIT_APPROVED
+  DEPOSIT_REJECTED
+  PROFIT_CREDITED
+  WALLET_DEDUCTED
+  NEW_ORDER
+}
+
+enum order_status {
+  DRAFT
+  PENDING_CONFIRMATION
+  CONFIRMED
+  WAITING_PAYMENT
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURNED
+}

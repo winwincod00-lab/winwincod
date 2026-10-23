@@ -1,17 +1,21 @@
 "use client";
 import { useState, useEffect } from "react";
+import { productImages } from "@/lib/product-images";
 import axios from "axios";
 import Link from "next/link";
-import { Briefcase, Package, Download, Rocket } from "lucide-react";
+import { Briefcase, Package, Rocket } from "lucide-react";
 
 export default function MyCatalogPage() {
   const [items, setItems] = useState([]);
+  const [error, setError] = useState(false);
+  const [revision, setRevision] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     axios.get("/api/seller/catalog")
-      .then(res => { setItems(res.data.products); setLoading(false); });
-  }, []);
+      .then(res => { setItems(res.data.products); })
+      .catch(() => setError(true)).finally(() => setLoading(false));
+  }, [revision]);
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -20,9 +24,11 @@ export default function MyCatalogPage() {
     </div>
   );
 
+  if (error) return <div role="alert">تعذر تحميل منتجاتك. <button className="p-3 underline" onClick={() => { setError(false); setLoading(true); setRevision(value => value + 1); }}>إعادة المحاولة</button></div>;
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap gap-3 justify-between items-center">
         <div>
           <h2 className="text-2xl font-black text-[#1E293B]">منتجاتي</h2>
           <p className="text-slate-400 text-sm mt-0.5">المنتجات التي أضفتها لقائمة عملك</p>
@@ -48,8 +54,8 @@ export default function MyCatalogPage() {
             <div key={item.id} className="bg-white rounded-2xl shadow-sm border border-[#E2E8F0] p-5 flex flex-col md:flex-row gap-5 items-center hover:shadow-md transition">
               {/* Thumbnail */}
               <div className="w-20 h-20 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] overflow-hidden flex-shrink-0">
-                {item.product.images ? (
-                  <img src={item.product.images} className="w-full h-full object-cover" alt={item.product.name} />
+                {productImages(item.product.images).length > 0 ? (
+                  <img src={productImages(item.product.images)[0]} className="w-full h-full object-cover" alt={item.product.name} />
                 ) : (
                   <div className="flex items-center justify-center h-full"><Package className="w-5 h-5 text-slate-300" /></div>
                 )}
@@ -67,9 +73,7 @@ export default function MyCatalogPage() {
 
               {/* Actions */}
               <div className="flex gap-3 w-full md:w-auto flex-shrink-0">
-                <button className="flex items-center gap-1 px-4 py-2 border border-[#E2E8F0] rounded-xl text-slate-600 hover:bg-[#F8FAFC] font-bold text-sm transition">
-                  <Download className="w-4 h-4" /> الصور
-                </button>
+                <Link href={`/seller/products/${item.product.id}`} className="flex items-center gap-1 px-4 py-2 border rounded-xl font-bold text-sm">عرض الصور والتفاصيل</Link>
                 <Link
                   href={`/seller/orders/new?productId=${item.product.id}`}
                   className="flex items-center gap-1 px-6 py-2 bg-[#4361EE] hover:bg-[#3254D4] text-white rounded-xl font-bold text-sm transition shadow-sm"

@@ -1,0 +1,1233 @@
+// PROPOSAL ONLY: not generated, migrated or used by the application.
+generator client {
+  provider = "prisma-client-js"
+  output = "./generated-do-not-use"
+}
+
+datasource db {
+  provider     = "postgresql"
+  url          = env("WINWINCOD_INTEGRITY_STAGING_URL")
+  directUrl    = env("WINWINCOD_INTEGRITY_STAGING_DIRECT_URL")
+  relationMode = "prisma"
+}
+
+// ====== Models ======
+
+model user {
+  id            String    @id @default(uuid())
+  seqId         Int?
+  name          String
+  email         String    @unique(map: "User_email_key")
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  phone         String?
+  role          user_role @default(SELLER)
+  isActive      Boolean   @default(true)
+  bankName        String?
+  bankAccountName String?
+  rib             String?
+  city            String?
+  storeName       String?
+  storeDescription String?
+  storeLink        String?
+  hasCompletedOnboarding Boolean @default(false)
+  createdAt DateTime  @default(now())
+
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  savedProducts SellerProduct[]
+  wallet       wallet?
+  logs         log[]
+  orders       order[]      @relation("SellerOrders")
+  orderBatches orderbatch[]
+  deposits          depositrequest[]
+  withdrawals       withdrawalrequest[]
+  notifications     Notification[]
+  back_fi_operation_seller_fk FiOperation[] @relation("fi_operation_seller_fk")
+  back_fi_ledger_account_seller_fk FiLedgerAccount[] @relation("fi_ledger_account_seller_fk")
+  back_fi_wallet_seller_fk FiWallet[] @relation("fi_wallet_seller_fk")
+  back_fi_withdrawal_hold_seller_fk FiWithdrawalHold[] @relation("fi_withdrawal_hold_seller_fk")
+  back_fi_funding_claim_seller_fk FiFundingClaim[] @relation("fi_funding_claim_seller_fk")
+  back_fi_journal_seller_fk FiJournal[] @relation("fi_journal_seller_fk")
+  back_fi_posting_seller_fk FiPosting[] @relation("fi_posting_seller_fk")
+  back_fi_wallet_event_seller_fk FiWalletEvent[] @relation("fi_wallet_event_seller_fk")
+  back_fi_order_line_seller_fk FiOrderLine[] @relation("fi_order_line_seller_fk")
+  back_fi_cost_snapshot_seller_fk FiCostSnapshot[] @relation("fi_cost_snapshot_seller_fk")
+  back_fi_cost_recognition_seller_fk FiCostRecognition[] @relation("fi_cost_recognition_seller_fk")
+  back_fi_stock_operation_seller_fk FiStockOperation[] @relation("fi_stock_operation_seller_fk")
+  back_fi_reservation_seller_fk FiReservation[] @relation("fi_reservation_seller_fk")
+  back_fi_shipment_seller_fk FiShipment[] @relation("fi_shipment_seller_fk")
+  back_fi_shipment_item_seller_fk FiShipmentItem[] @relation("fi_shipment_item_seller_fk")
+  back_fi_return_receipt_seller_fk FiReturnReceipt[] @relation("fi_return_receipt_seller_fk")
+  back_fi_disposition_seller_fk FiDisposition[] @relation("fi_disposition_seller_fk")
+  back_fi_stock_movement_seller_fk FiStockMovement[] @relation("fi_stock_movement_seller_fk")
+  back_fi_settlement_match_seller_fk FiSettlementMatch[] @relation("fi_settlement_match_seller_fk")
+  back_fi_payout_intent_seller_fk FiPayoutIntent[] @relation("fi_payout_intent_seller_fk")
+  back_fi_payout_evidence_seller_fk FiPayoutEvidence[] @relation("fi_payout_evidence_seller_fk")
+  back_fi_settlement_link_seller_fk FiSettlementLink[] @relation("fi_settlement_link_seller_fk")
+  back_fi_wallet_entitlement_seller_fk FiWalletEntitlement[] @relation("fi_wallet_entitlement_seller_fk")
+  back_fi_line_charge_seller_fk FiLineCharge[] @relation("fi_line_charge_seller_fk")
+  back_fi_shipment_terms_seller_fk FiShipmentTerms[] @relation("fi_shipment_terms_seller_fk")
+  back_FiOpeningEvidence_approvedBy_fk FiOpeningEvidence[] @relation("FiOpeningEvidence_approvedBy_fk")
+  back_FiOperation_actorId_fk FiOperation[] @relation("FiOperation_actorId_fk")
+  back_FiWarehouseGrant_actorId_fk FiWarehouseGrant[] @relation("FiWarehouseGrant_actorId_fk")
+  back_FiWarehouseGrant_approvedBy_fk FiWarehouseGrant[] @relation("FiWarehouseGrant_approvedBy_fk")
+  back_FiGrantRevocation_actorId_fk FiGrantRevocation[] @relation("FiGrantRevocation_actorId_fk")
+  back_FiStockOperation_actorId_fk FiStockOperation[] @relation("FiStockOperation_actorId_fk")
+  back_FiFundingEvidence_verifiedBy_fk FiFundingEvidence[] @relation("FiFundingEvidence_verifiedBy_fk")
+  back_FiRemittance_verifiedBy_fk FiRemittance[] @relation("FiRemittance_verifiedBy_fk")
+  back_fi_payout_evidence_actor_fk FiPayoutEvidence[] @relation("fi_payout_evidence_actor_fk")
+  back_fi_policy_owner_fk FiPolicyDecision[] @relation("fi_policy_owner_fk")
+  back_fi_policy_revoke_actor_fk FiPolicyRevocation[] @relation("fi_policy_revoke_actor_fk")
+  back_fi_entitlement_actor_fk FiWalletEntitlement[] @relation("fi_entitlement_actor_fk")
+}
+
+model wallet {
+  id      String  @id @default(uuid())
+  userId  String  @unique(map: "Wallet_userId_key")
+  balance Decimal @default(0.0)
+
+  // Relations
+  user         user          @relation(fields: [userId], references: [id])
+  transactions transaction[]
+  back_fi_wallet_legacy_fk FiWallet[] @relation("fi_wallet_legacy_fk")
+}
+
+model transaction {
+  id          String           @id @default(uuid())
+  walletId    String
+  amount      Decimal
+  type        transaction_type
+  referenceId String?
+  description String?
+  createdAt   DateTime         @default(now())
+
+  wallet wallet @relation(fields: [walletId], references: [id])
+
+  @@index([walletId], map: "Transaction_walletId_idx")
+}
+
+model log {
+  id        String   @id @default(uuid())
+  userId    String
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+
+  user user @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "Log_userId_idx")
+}
+
+model order {
+  id             String       @id @default(uuid())
+  seqId          Int?
+  sellerId       String
+  
+  // 1. الربط مع الدفعة (Batch)
+  batchId        String?
+  batch          orderbatch?  @relation(fields: [batchId], references: [id])
+
+  // 2. الربط مع المنتج (Product)
+  productId      String?
+  product        product?     @relation(fields: [productId], references: [id])
+
+  customerName   String
+  customerPhone  String
+  address        String
+  city           String
+  productName    String
+  quantity       Int
+  codAmount      Decimal
+  codReceived    Decimal?
+  shippingFee    Decimal      @default(0.0)
+  systemFee      Decimal      @default(0.0)
+  netProfit      Decimal      @default(0.0)
+  status         order_status @default(DRAFT)
+  statusHistory  OrderStatusHistory[]
+  trackingNumber String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  seller user @relation("SellerOrders", fields: [sellerId], references: [id])
+
+  @@index([batchId], map: "Order_batchId_idx")
+  @@index([sellerId], map: "Order_sellerId_idx")
+  @@index([productId], map: "Order_productId_idx")
+  back_fi_line_legacy_fk FiOrderLine[] @relation("fi_line_legacy_fk")
+}
+
+model orderbatch {
+  id           String   @id @default(uuid())
+  sellerId     String
+  totalAmount  Decimal
+  paymentProof String?
+  isPaid       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  orders       order[]
+
+  seller user @relation(fields: [sellerId], references: [id])
+
+  @@index([sellerId], map: "OrderBatch_sellerId_idx")
+}
+
+model SellerProduct {
+  id        String   @id @default(cuid())
+  sellerId  String
+  productId String
+  addedAt   DateTime @default(now())
+
+  seller    user     @relation(fields: [sellerId], references: [id])
+  product   product  @relation(fields: [productId], references: [id])
+
+  @@unique([sellerId, productId]) 
+  @@index([sellerId])
+}
+
+
+model product {
+  id          String   @id @default(uuid())
+  seqId       Int?
+  supplierId  String
+  name        String
+  description String?  @db.Text
+  images      String   @db.Text
+  sku         String   @unique(map: "Product_sku_key")
+  costPrice   Decimal
+  sellerPrice Decimal
+  marketPrice Decimal
+  stock       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+
+  savedByUsers  SellerProduct[]
+  orders      order[]
+
+  supplier supplier @relation(fields: [supplierId], references: [id])
+
+  @@index([supplierId], map: "Product_supplierId_idx")
+  back_fi_line_product_fk FiOrderLine[] @relation("fi_line_product_fk")
+  back_fi_stock_product_fk FiStockBalance[] @relation("fi_stock_product_fk")
+}
+
+model supplier {
+  id          String  @id @default(uuid())
+  name        String
+  contactInfo String?
+
+  products product[]
+}
+
+model depositrequest {
+  id            String        @id @default(cuid())
+  sellerId      String
+  amount        Decimal
+  receiptImage  String?       // رابط صورة الوصل
+  status        deposit_status @default(PENDING)
+  notes         String?    
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  seller        user          @relation(fields: [sellerId], references: [id])
+  back_fi_claim_deposit_fk FiFundingClaim[] @relation("fi_claim_deposit_fk")
+}
+
+model OrderStatusHistory {
+  id        String       @id @default(uuid())
+  orderId   String
+  status    order_status
+  userId    String       // الشخص الذي غير الحالة
+  createdAt DateTime     @default(now())
+
+  order order @relation(fields: [orderId], references: [id])
+
+  @@index([orderId], map: "OrderStatusHistory_orderId_idx")
+}
+
+model withdrawalrequest {
+  id            String            @id @default(cuid())
+  sellerId      String
+  amount        Decimal
+  receiptImage  String?       // رابط الوصل المرفق من المشرف عند الدفع
+  status        withdrawal_status @default(PENDING)
+  notes         String?    
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  seller        user              @relation(fields: [sellerId], references: [id])
+  back_fi_hold_request_fk FiWithdrawalHold[] @relation("fi_hold_request_fk")
+}
+
+model Notification {
+  id        String            @id @default(cuid())
+  userId    String
+  user      user              @relation(fields: [userId], references: [id])
+  type      notification_type
+  title     String
+  message   String
+  isRead    Boolean           @default(false)
+  link      String?
+  createdAt DateTime          @default(now())
+
+  @@index([userId])
+  @@index([userId, isRead])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user user @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user user @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ====== Enums ======
+enum transaction_type {
+  DEPOSIT
+  ORDER_PAYMENT
+  REFUND_RETURN
+  WITHDRAWAL
+  SHIPPING_PAYMENT
+  DELIVERY_PROFIT
+}
+
+enum deposit_status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum withdrawal_status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum user_role {
+  ADMIN
+  SELLER
+  CALL_CENTER
+}
+
+enum notification_type {
+  ORDER_STATUS
+  DEPOSIT_APPROVED
+  DEPOSIT_REJECTED
+  PROFIT_CREDITED
+  WALLET_DEDUCTED
+  NEW_ORDER
+}
+
+enum order_status {
+  DRAFT
+  PENDING_CONFIRMATION
+  CONFIRMED
+  WAITING_PAYMENT
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+
+model FiOpeningEvidence {
+  id String @id
+  entityKind String
+  entityId String
+  evidenceHash String
+  approvedBy String
+  approvedAt DateTime @db.Timestamptz(6) @default(now())
+  rel_FiOpeningEvidence_approvedBy_fk user @relation("FiOpeningEvidence_approvedBy_fk", fields: [approvedBy], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_account_opening_fk FiLedgerAccount[] @relation("fi_account_opening_fk")
+  back_fi_wallet_opening_fk FiWallet[] @relation("fi_wallet_opening_fk")
+  back_fi_stock_opening_fk FiStockBalance[] @relation("fi_stock_opening_fk")
+  @@unique([entityKind, entityId], map: "fi_opening_evidence_u0")
+  @@index([approvedBy], map: "fi_opening_evidence_i0")
+  @@map("fi_opening_evidence")
+}
+
+model FiOperation {
+  id String @id
+  sellerId String
+  kind String
+  requestKey String
+  businessKey String
+  payloadHash String
+  policyDecisionId String
+  actorId String
+  createdAt DateTime @db.Timestamptz(6) @default(now())
+  rel_fi_operation_seller_fk user @relation("fi_operation_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_FiOperation_actorId_fk user @relation("FiOperation_actorId_fk", fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_hold_operation_fk FiWithdrawalHold[] @relation("fi_hold_operation_fk")
+  back_fi_funding_operation_fk FiFundingClaim[] @relation("fi_funding_operation_fk")
+  back_fi_journal_operation_fk FiJournal[] @relation("fi_journal_operation_fk")
+  back_fi_event_operation_fk FiWalletEvent[] @relation("fi_event_operation_fk")
+  back_fi_line_operation_fk FiOrderLine[] @relation("fi_line_operation_fk")
+  back_fi_snapshot_operation_fk FiCostSnapshot[] @relation("fi_snapshot_operation_fk")
+  back_fi_recognition_operation_fk FiCostRecognition[] @relation("fi_recognition_operation_fk")
+  back_fi_stock_financial_fk FiStockOperation[] @relation("fi_stock_financial_fk")
+  back_fi_match_operation_fk FiSettlementMatch[] @relation("fi_match_operation_fk")
+  back_fi_allocation_operation_fk FiRemittanceAllocation[] @relation("fi_allocation_operation_fk")
+  back_fi_payout_operation_fk FiPayoutIntent[] @relation("fi_payout_operation_fk")
+  back_fi_payout_event_operation_fk FiPayoutEvent[] @relation("fi_payout_event_operation_fk")
+  back_fi_match_revoke_operation_fk FiMatchRevocation[] @relation("fi_match_revoke_operation_fk")
+  back_fi_operation_receipt_fk FiOperationReceipt[] @relation("fi_operation_receipt_fk")
+  rel_fi_operation_policy_fk FiPolicyDecision @relation("fi_operation_policy_fk", fields: [policyDecisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_entitlement_operation_fk FiWalletEntitlement[] @relation("fi_entitlement_operation_fk")
+  back_fi_charge_operation_fk FiLineCharge[] @relation("fi_charge_operation_fk")
+  back_fi_terms_operation_fk FiShipmentTerms[] @relation("fi_terms_operation_fk")
+  @@unique([id, sellerId], map: "fi_operation_u0")
+  @@unique([sellerId, kind, requestKey], map: "fi_operation_u1")
+  @@unique([sellerId, kind, businessKey], map: "fi_operation_u2")
+  @@index([actorId, createdAt], map: "fi_operation_i0")
+  @@index([sellerId], map: "fi_operation_i1")
+  @@index([actorId], map: "fi_operation_i2")
+  @@index([policyDecisionId], map: "fi_operation_i3")
+  @@map("fi_operation")
+}
+
+model FiLedgerAccount {
+  id String @id
+  sellerId String?
+  kind String
+  code String
+  currency String
+  openingDebitBalance Decimal @db.Decimal(65,30)
+  openingEvidenceId String
+  rel_fi_ledger_account_seller_fk user? @relation("fi_ledger_account_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_account_opening_fk FiOpeningEvidence @relation("fi_account_opening_fk", fields: [openingEvidenceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_wallet_account_fk FiWallet[] @relation("fi_wallet_account_fk")
+  back_fi_posting_account_fk FiPosting[] @relation("fi_posting_account_fk")
+  @@unique([code], map: "fi_ledger_account_u0")
+  @@unique([id, sellerId], map: "fi_ledger_account_u1")
+  @@index([sellerId], map: "fi_ledger_account_i0")
+  @@index([openingEvidenceId], map: "fi_ledger_account_i1")
+  @@map("fi_ledger_account")
+}
+
+model FiWallet {
+  id String @id
+  sellerId String
+  legacyWalletId String
+  ledgerAccountId String
+  openingBalance Decimal @db.Decimal(65,30)
+  balance Decimal @db.Decimal(65,30)
+  held Decimal @db.Decimal(65,30)
+  openingEvidenceId String
+  activatedAt DateTime? @db.Timestamptz(6)
+  rel_fi_wallet_seller_fk user @relation("fi_wallet_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_wallet_opening_fk FiOpeningEvidence @relation("fi_wallet_opening_fk", fields: [openingEvidenceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_wallet_legacy_fk wallet @relation("fi_wallet_legacy_fk", fields: [legacyWalletId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_wallet_account_fk FiLedgerAccount @relation("fi_wallet_account_fk", fields: [ledgerAccountId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_hold_wallet_fk FiWithdrawalHold[] @relation("fi_hold_wallet_fk")
+  back_fi_event_wallet_fk FiWalletEvent[] @relation("fi_event_wallet_fk")
+  @@unique([id, sellerId], map: "fi_wallet_u0")
+  @@unique([sellerId], map: "fi_wallet_u1")
+  @@unique([legacyWalletId], map: "fi_wallet_u2")
+  @@unique([ledgerAccountId], map: "fi_wallet_u3")
+  @@unique([openingEvidenceId], map: "fi_wallet_u4")
+
+  @@map("fi_wallet")
+}
+
+model FiWithdrawalHold {
+  id String @id
+  sellerId String
+  walletId String
+  legacyRequestId String
+  amount Decimal @db.Decimal(65,30)
+  remaining Decimal @db.Decimal(65,30)
+  state String
+  payoutSnapshot String
+  createdOperationId String
+  rel_fi_withdrawal_hold_seller_fk user @relation("fi_withdrawal_hold_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_hold_wallet_fk FiWallet @relation("fi_hold_wallet_fk", fields: [walletId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_hold_operation_fk FiOperation @relation("fi_hold_operation_fk", fields: [createdOperationId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_hold_request_fk withdrawalrequest @relation("fi_hold_request_fk", fields: [legacyRequestId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_event_hold_fk FiWalletEvent[] @relation("fi_event_hold_fk")
+  back_fi_payout_hold_fk FiPayoutIntent[] @relation("fi_payout_hold_fk")
+  back_fi_payout_evidence_hold_fk FiPayoutEvidence[] @relation("fi_payout_evidence_hold_fk")
+  @@unique([id, sellerId], map: "fi_withdrawal_hold_u0")
+  @@unique([legacyRequestId], map: "fi_withdrawal_hold_u1")
+  @@unique([createdOperationId], map: "fi_withdrawal_hold_u2")
+  @@index([walletId, state], map: "fi_withdrawal_hold_i0")
+  @@index([sellerId], map: "fi_withdrawal_hold_i1")
+  @@index([walletId, sellerId], map: "fi_withdrawal_hold_i2")
+  @@map("fi_withdrawal_hold")
+}
+
+model FiFundingEvidence {
+  id String @id
+  sourceAccountRef String
+  externalRef String
+  amount Decimal @db.Decimal(65,30)
+  currency String
+  evidenceHash String
+  verifiedBy String
+  verifiedAt DateTime @db.Timestamptz(6) @default(now())
+  rel_FiFundingEvidence_verifiedBy_fk user @relation("FiFundingEvidence_verifiedBy_fk", fields: [verifiedBy], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_claim_evidence_fk FiFundingClaim[] @relation("fi_claim_evidence_fk")
+  @@unique([sourceAccountRef, externalRef], map: "fi_funding_evidence_u0")
+  @@index([verifiedBy], map: "fi_funding_evidence_i0")
+  @@map("fi_funding_evidence")
+}
+
+model FiFundingClaim {
+  id String @id
+  sellerId String
+  operationId String
+  evidenceId String
+  legacyDepositId String?
+  rel_fi_funding_claim_seller_fk user @relation("fi_funding_claim_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_funding_operation_fk FiOperation @relation("fi_funding_operation_fk", fields: [operationId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_claim_evidence_fk FiFundingEvidence @relation("fi_claim_evidence_fk", fields: [evidenceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_claim_deposit_fk depositrequest? @relation("fi_claim_deposit_fk", fields: [legacyDepositId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([operationId], map: "fi_funding_claim_u0")
+  @@unique([evidenceId], map: "fi_funding_claim_u1")
+  @@unique([legacyDepositId], map: "fi_funding_claim_u2")
+  @@index([sellerId], map: "fi_funding_claim_i0")
+  @@map("fi_funding_claim")
+}
+
+model FiJournal {
+  id String @id
+  sellerId String
+  operationId String
+  settlementMatchId String?
+  currency String
+  createdAt DateTime @db.Timestamptz(6) @default(now())
+  rel_fi_journal_seller_fk user @relation("fi_journal_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_journal_operation_fk FiOperation @relation("fi_journal_operation_fk", fields: [operationId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_journal_match_fk FiSettlementMatch? @relation("fi_journal_match_fk", fields: [settlementMatchId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_posting_journal_fk FiPosting[] @relation("fi_posting_journal_fk")
+  back_fi_event_journal_fk FiWalletEvent[] @relation("fi_event_journal_fk")
+  @@unique([id, sellerId], map: "fi_journal_u0")
+  @@unique([operationId], map: "fi_journal_u1")
+  @@unique([settlementMatchId], map: "fi_journal_u2")
+  @@index([sellerId], map: "fi_journal_i0")
+  @@map("fi_journal")
+}
+
+model FiPosting {
+  id String @id
+  sellerId String
+  journalId String
+  accountId String
+  amount Decimal @db.Decimal(65,30)
+  reversalOfId String?
+  rel_fi_posting_seller_fk user @relation("fi_posting_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_posting_journal_fk FiJournal @relation("fi_posting_journal_fk", fields: [journalId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_posting_account_fk FiLedgerAccount @relation("fi_posting_account_fk", fields: [accountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_posting_reversal_fk FiPosting? @relation("fi_posting_reversal_fk", fields: [reversalOfId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_posting_reversal_fk FiPosting[] @relation("fi_posting_reversal_fk")
+
+  @@index([journalId], map: "fi_posting_i0")
+  @@index([accountId], map: "fi_posting_i1")
+  @@index([reversalOfId], map: "fi_posting_i2")
+  @@index([sellerId], map: "fi_posting_i3")
+  @@map("fi_posting")
+}
+
+model FiWalletEvent {
+  id String @id
+  sellerId String
+  operationId String
+  walletId String
+  kind String
+  cashDelta Decimal @db.Decimal(65,30)
+  heldDelta Decimal @db.Decimal(65,30)
+  holdId String?
+  journalId String?
+  createdAt DateTime @db.Timestamptz(6) @default(now())
+  rel_fi_wallet_event_seller_fk user @relation("fi_wallet_event_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_event_wallet_fk FiWallet @relation("fi_event_wallet_fk", fields: [walletId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_event_operation_fk FiOperation @relation("fi_event_operation_fk", fields: [operationId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_event_hold_fk FiWithdrawalHold? @relation("fi_event_hold_fk", fields: [holdId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_event_journal_fk FiJournal? @relation("fi_event_journal_fk", fields: [journalId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([walletId, operationId], map: "fi_wallet_event_u0")
+  @@unique([journalId], map: "fi_wallet_event_u1")
+  @@index([walletId, createdAt], map: "fi_wallet_event_i0")
+  @@index([holdId], map: "fi_wallet_event_i1")
+  @@index([sellerId], map: "fi_wallet_event_i2")
+  @@index([walletId, sellerId], map: "fi_wallet_event_i3")
+  @@index([operationId, sellerId], map: "fi_wallet_event_i4")
+  @@map("fi_wallet_event")
+}
+
+model FiOrderLine {
+  id String @id
+  sellerId String
+  legacyOrderId String
+  productId String
+  quantity Int
+  createdOperationId String?
+  rel_fi_order_line_seller_fk user @relation("fi_order_line_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_line_legacy_fk order @relation("fi_line_legacy_fk", fields: [legacyOrderId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_line_product_fk product @relation("fi_line_product_fk", fields: [productId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_line_operation_fk FiOperation? @relation("fi_line_operation_fk", fields: [createdOperationId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_snapshot_line_fk FiCostSnapshot[] @relation("fi_snapshot_line_fk")
+  back_fi_reservation_line_fk FiReservation[] @relation("fi_reservation_line_fk")
+  back_fi_item_line_fk FiShipmentItem[] @relation("fi_item_line_fk")
+  back_fi_charge_line_fk FiLineCharge[] @relation("fi_charge_line_fk")
+  @@unique([legacyOrderId], map: "fi_order_line_u0")
+  @@unique([id, sellerId], map: "fi_order_line_u1")
+  @@unique([id, sellerId, productId], map: "fi_order_line_u2")
+  @@index([sellerId], map: "fi_order_line_i0")
+  @@index([productId], map: "fi_order_line_i1")
+  @@index([createdOperationId, sellerId], map: "fi_order_line_i2")
+  @@map("fi_order_line")
+}
+
+model FiCostSnapshot {
+  id String @id
+  sellerId String
+  lineId String
+  version Int
+  source String
+  sellerUnitCost Decimal? @db.Decimal(65,30)
+  supplierUnitCost Decimal? @db.Decimal(65,30)
+  currency String
+  evidenceHash String?
+  operationId String?
+  capturedAt DateTime? @db.Timestamptz(6)
+  rel_fi_cost_snapshot_seller_fk user @relation("fi_cost_snapshot_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_snapshot_line_fk FiOrderLine @relation("fi_snapshot_line_fk", fields: [lineId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_snapshot_operation_fk FiOperation? @relation("fi_snapshot_operation_fk", fields: [operationId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_recognition_snapshot_fk FiCostRecognition[] @relation("fi_recognition_snapshot_fk")
+  back_fi_charge_snapshot_fk FiLineCharge[] @relation("fi_charge_snapshot_fk")
+  @@unique([lineId, version], map: "fi_cost_snapshot_u0")
+  @@unique([id, sellerId, lineId], map: "fi_cost_snapshot_u1")
+  @@index([sellerId], map: "fi_cost_snapshot_i0")
+  @@index([lineId, sellerId], map: "fi_cost_snapshot_i1")
+  @@index([operationId, sellerId], map: "fi_cost_snapshot_i2")
+  @@map("fi_cost_snapshot")
+}
+
+model FiCostRecognition {
+  id String @id
+  sellerId String
+  lineId String
+  snapshotId String
+  operationId String
+  quantityDelta Int
+  basis String
+  policyApprovalRef String
+  reversalOfId String?
+  dispositionId String?
+  rel_fi_cost_recognition_seller_fk user @relation("fi_cost_recognition_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_recognition_snapshot_fk FiCostSnapshot @relation("fi_recognition_snapshot_fk", fields: [snapshotId, sellerId, lineId], references: [id, sellerId, lineId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_recognition_operation_fk FiOperation @relation("fi_recognition_operation_fk", fields: [operationId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_recognition_reversal_fk FiCostRecognition? @relation("fi_recognition_reversal_fk", fields: [reversalOfId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_recognition_reversal_fk FiCostRecognition[] @relation("fi_recognition_reversal_fk")
+  rel_fi_recognition_disposition_fk FiDisposition? @relation("fi_recognition_disposition_fk", fields: [dispositionId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_recognition_policy_fk FiPolicyDecision @relation("fi_recognition_policy_fk", fields: [policyApprovalRef], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([operationId], map: "fi_cost_recognition_u0")
+  @@index([lineId], map: "fi_cost_recognition_i0")
+  @@index([reversalOfId], map: "fi_cost_recognition_i1")
+  @@index([sellerId], map: "fi_cost_recognition_i2")
+  @@index([snapshotId, sellerId, lineId], map: "fi_cost_recognition_i3")
+  @@index([dispositionId, sellerId], map: "fi_cost_recognition_i4")
+  @@index([policyApprovalRef], map: "fi_cost_recognition_i5")
+  @@map("fi_cost_recognition")
+}
+
+model FiWarehouseGrant {
+  id String @id
+  actorId String
+  capability String
+  approvedBy String
+  evidenceHash String
+  createdAt DateTime @db.Timestamptz(6) @default(now())
+  rel_FiWarehouseGrant_actorId_fk user @relation("FiWarehouseGrant_actorId_fk", fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_FiWarehouseGrant_approvedBy_fk user @relation("FiWarehouseGrant_approvedBy_fk", fields: [approvedBy], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_grant_revocation_fk FiGrantRevocation[] @relation("fi_grant_revocation_fk")
+  back_fi_stock_grant_fk FiStockOperation[] @relation("fi_stock_grant_fk")
+
+  @@index([actorId, capability], map: "fi_warehouse_grant_i0")
+  @@index([actorId], map: "fi_warehouse_grant_i1")
+  @@index([approvedBy], map: "fi_warehouse_grant_i2")
+  @@map("fi_warehouse_grant")
+}
+
+model FiGrantRevocation {
+  id String @id
+  grantId String
+  actorId String
+  reason String
+  createdAt DateTime @db.Timestamptz(6) @default(now())
+  rel_FiGrantRevocation_actorId_fk user @relation("FiGrantRevocation_actorId_fk", fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_grant_revocation_fk FiWarehouseGrant @relation("fi_grant_revocation_fk", fields: [grantId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([grantId], map: "fi_grant_revocation_u0")
+  @@index([actorId], map: "fi_grant_revocation_i0")
+  @@map("fi_grant_revocation")
+}
+
+model FiStockOperation {
+  id String @id
+  sellerId String?
+  actorId String
+  kind String
+  requestKey String
+  businessKey String
+  payloadHash String
+  reason String
+  financialOperationId String?
+  grantId String?
+  evidenceHash String?
+  createdAt DateTime @db.Timestamptz(6) @default(now())
+  rel_fi_stock_operation_seller_fk user? @relation("fi_stock_operation_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_FiStockOperation_actorId_fk user @relation("FiStockOperation_actorId_fk", fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_stock_grant_fk FiWarehouseGrant? @relation("fi_stock_grant_fk", fields: [grantId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_stock_financial_fk FiOperation? @relation("fi_stock_financial_fk", fields: [financialOperationId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_reservation_operation_fk FiReservation[] @relation("fi_reservation_operation_fk")
+  back_fi_shipment_operation_fk FiShipment[] @relation("fi_shipment_operation_fk")
+  back_fi_item_operation_fk FiShipmentItem[] @relation("fi_item_operation_fk")
+  back_fi_receipt_operation_fk FiReturnReceipt[] @relation("fi_receipt_operation_fk")
+  back_fi_disposition_operation_fk FiDisposition[] @relation("fi_disposition_operation_fk")
+  back_fi_movement_operation_fk FiStockMovement[] @relation("fi_movement_operation_fk")
+  back_fi_stock_receipt_fk FiStockOperationReceipt[] @relation("fi_stock_receipt_fk")
+  @@unique([id, sellerId], map: "fi_stock_operation_u0")
+  @@unique([actorId, requestKey], map: "fi_stock_operation_u1")
+  @@unique([kind, businessKey], map: "fi_stock_operation_u2")
+  @@unique([financialOperationId], map: "fi_stock_operation_u3")
+  @@index([sellerId], map: "fi_stock_operation_i0")
+  @@index([actorId], map: "fi_stock_operation_i1")
+  @@index([grantId], map: "fi_stock_operation_i2")
+  @@map("fi_stock_operation")
+}
+
+model FiStockBalance {
+  productId String @id
+  openingAvailable Int
+  available Int
+  reserved Int
+  inTransit Int
+  returnedPendingInspection Int
+  damaged Int
+  openingEvidenceId String
+  activatedAt DateTime? @db.Timestamptz(6)
+  rel_fi_stock_product_fk product @relation("fi_stock_product_fk", fields: [productId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_stock_opening_fk FiOpeningEvidence @relation("fi_stock_opening_fk", fields: [openingEvidenceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_movement_product_fk FiStockMovement[] @relation("fi_movement_product_fk")
+  @@unique([openingEvidenceId], map: "fi_stock_balance_u0")
+
+  @@map("fi_stock_balance")
+}
+
+model FiReservation {
+  id String @id
+  sellerId String
+  lineId String
+  productId String
+  units Int
+  remaining Int
+  dispatched Int
+  released Int
+  operationId String
+  rel_fi_reservation_seller_fk user @relation("fi_reservation_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_reservation_line_fk FiOrderLine @relation("fi_reservation_line_fk", fields: [lineId, sellerId, productId], references: [id, sellerId, productId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_reservation_operation_fk FiStockOperation @relation("fi_reservation_operation_fk", fields: [operationId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_item_reservation_fk FiShipmentItem[] @relation("fi_item_reservation_fk")
+  back_fi_movement_reservation_fk FiStockMovement[] @relation("fi_movement_reservation_fk")
+  @@unique([lineId], map: "fi_reservation_u0")
+  @@unique([id, sellerId, productId], map: "fi_reservation_u1")
+  @@index([productId], map: "fi_reservation_i0")
+  @@index([sellerId], map: "fi_reservation_i1")
+  @@index([operationId, sellerId], map: "fi_reservation_i2")
+  @@map("fi_reservation")
+}
+
+model FiCarrierAccount {
+  id String @id
+  carrier String
+  accountRef String
+  back_fi_shipment_carrier_fk FiShipment[] @relation("fi_shipment_carrier_fk")
+  back_fi_observation_account_fk FiCarrierObservation[] @relation("fi_observation_account_fk")
+  back_fi_statement_account_fk FiSettlementStatement[] @relation("fi_statement_account_fk")
+  @@unique([carrier, accountRef], map: "fi_carrier_account_u0")
+
+  @@map("fi_carrier_account")
+}
+
+model FiShipment {
+  id String @id
+  sellerId String
+  carrierAccountId String?
+  externalRef String?
+  trackingRef String?
+  expectedCod Decimal? @db.Decimal(65,30)
+  currency String
+  operationId String
+  rel_fi_shipment_seller_fk user @relation("fi_shipment_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_shipment_carrier_fk FiCarrierAccount? @relation("fi_shipment_carrier_fk", fields: [carrierAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_shipment_operation_fk FiStockOperation @relation("fi_shipment_operation_fk", fields: [operationId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_item_shipment_fk FiShipmentItem[] @relation("fi_item_shipment_fk")
+  back_fi_match_shipment_fk FiSettlementMatch[] @relation("fi_match_shipment_fk")
+  back_fi_active_shipment_fk FiSettlementLink[] @relation("fi_active_shipment_fk")
+  back_fi_terms_shipment_fk FiShipmentTerms[] @relation("fi_terms_shipment_fk")
+  @@unique([id, sellerId], map: "fi_shipment_u0")
+  @@unique([carrierAccountId, externalRef], map: "fi_shipment_u1")
+  @@index([sellerId], map: "fi_shipment_i0")
+  @@index([carrierAccountId], map: "fi_shipment_i1")
+  @@index([operationId, sellerId], map: "fi_shipment_i2")
+  @@map("fi_shipment")
+}
+
+model FiShipmentItem {
+  id String @id
+  sellerId String
+  shipmentId String
+  reservationId String
+  lineId String
+  productId String
+  units Int
+  delivered Int
+  returned Int
+  operationId String
+  rel_fi_shipment_item_seller_fk user @relation("fi_shipment_item_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_item_shipment_fk FiShipment @relation("fi_item_shipment_fk", fields: [shipmentId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_item_reservation_fk FiReservation @relation("fi_item_reservation_fk", fields: [reservationId, sellerId, productId], references: [id, sellerId, productId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_item_line_fk FiOrderLine @relation("fi_item_line_fk", fields: [lineId, sellerId, productId], references: [id, sellerId, productId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_item_operation_fk FiStockOperation @relation("fi_item_operation_fk", fields: [operationId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_receipt_item_fk FiReturnReceipt[] @relation("fi_receipt_item_fk")
+  back_fi_movement_item_fk FiStockMovement[] @relation("fi_movement_item_fk")
+  @@unique([id, sellerId], map: "fi_shipment_item_u0")
+  @@unique([operationId, lineId], map: "fi_shipment_item_u1")
+  @@index([reservationId], map: "fi_shipment_item_i0")
+  @@index([sellerId], map: "fi_shipment_item_i1")
+  @@index([shipmentId, sellerId], map: "fi_shipment_item_i2")
+  @@index([lineId, sellerId, productId], map: "fi_shipment_item_i3")
+  @@index([operationId, sellerId], map: "fi_shipment_item_i4")
+  @@map("fi_shipment_item")
+}
+
+model FiReturnReceipt {
+  id String @id
+  sellerId String
+  shipmentItemId String
+  units Int
+  warehouseRef String
+  evidenceHash String
+  operationId String
+  rel_fi_return_receipt_seller_fk user @relation("fi_return_receipt_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_receipt_item_fk FiShipmentItem @relation("fi_receipt_item_fk", fields: [shipmentItemId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_receipt_operation_fk FiStockOperation @relation("fi_receipt_operation_fk", fields: [operationId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_disposition_receipt_fk FiDisposition[] @relation("fi_disposition_receipt_fk")
+  back_fi_movement_receipt_fk FiStockMovement[] @relation("fi_movement_receipt_fk")
+  @@unique([id, sellerId], map: "fi_return_receipt_u0")
+  @@unique([warehouseRef], map: "fi_return_receipt_u1")
+  @@unique([operationId], map: "fi_return_receipt_u2")
+  @@index([shipmentItemId], map: "fi_return_receipt_i0")
+  @@index([sellerId], map: "fi_return_receipt_i1")
+  @@map("fi_return_receipt")
+}
+
+model FiDisposition {
+  id String @id
+  sellerId String
+  receiptId String
+  kind String
+  units Int
+  moved Int
+  operationId String
+  rel_fi_disposition_seller_fk user @relation("fi_disposition_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_recognition_disposition_fk FiCostRecognition[] @relation("fi_recognition_disposition_fk")
+  rel_fi_disposition_receipt_fk FiReturnReceipt @relation("fi_disposition_receipt_fk", fields: [receiptId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_disposition_operation_fk FiStockOperation @relation("fi_disposition_operation_fk", fields: [operationId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_movement_disposition_fk FiStockMovement[] @relation("fi_movement_disposition_fk")
+  back_fi_entitlement_disposition_fk FiWalletEntitlement[] @relation("fi_entitlement_disposition_fk")
+  @@unique([id, sellerId], map: "fi_disposition_u0")
+  @@unique([operationId], map: "fi_disposition_u1")
+  @@index([receiptId], map: "fi_disposition_i0")
+  @@index([sellerId], map: "fi_disposition_i1")
+  @@map("fi_disposition")
+}
+
+model FiStockMovement {
+  id String @id
+  operationId String
+  sequence Int
+  sellerId String?
+  productId String
+  fromBucket String
+  toBucket String
+  units Int
+  reservationId String?
+  shipmentItemId String?
+  receiptId String?
+  dispositionId String?
+  createdAt DateTime @db.Timestamptz(6) @default(now())
+  rel_fi_stock_movement_seller_fk user? @relation("fi_stock_movement_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_movement_operation_fk FiStockOperation @relation("fi_movement_operation_fk", fields: [operationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_movement_product_fk FiStockBalance @relation("fi_movement_product_fk", fields: [productId], references: [productId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_movement_reservation_fk FiReservation? @relation("fi_movement_reservation_fk", fields: [reservationId, sellerId, productId], references: [id, sellerId, productId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_movement_item_fk FiShipmentItem? @relation("fi_movement_item_fk", fields: [shipmentItemId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_movement_receipt_fk FiReturnReceipt? @relation("fi_movement_receipt_fk", fields: [receiptId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_movement_disposition_fk FiDisposition? @relation("fi_movement_disposition_fk", fields: [dispositionId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([operationId, sequence], map: "fi_stock_movement_u0")
+  @@index([productId, createdAt], map: "fi_stock_movement_i0")
+  @@index([reservationId], map: "fi_stock_movement_i1")
+  @@index([shipmentItemId], map: "fi_stock_movement_i2")
+  @@index([receiptId], map: "fi_stock_movement_i3")
+  @@index([dispositionId], map: "fi_stock_movement_i4")
+  @@index([sellerId], map: "fi_stock_movement_i5")
+  @@index([operationId], map: "fi_stock_movement_i6")
+  @@index([productId], map: "fi_stock_movement_i7")
+  @@map("fi_stock_movement")
+}
+
+model FiCarrierObservation {
+  id String @id
+  carrierAccountId String
+  externalEventKey String
+  payloadHash String
+  evidenceRef String
+  observedAt DateTime @db.Timestamptz(6) @default(now())
+  rel_fi_observation_account_fk FiCarrierAccount @relation("fi_observation_account_fk", fields: [carrierAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([carrierAccountId, externalEventKey], map: "fi_carrier_observation_u0")
+  @@index([carrierAccountId], map: "fi_carrier_observation_i0")
+  @@map("fi_carrier_observation")
+}
+
+model FiSettlementStatement {
+  id String @id
+  carrierAccountId String
+  statementRef String
+  currency String
+  evidenceHash String
+  receivedAt DateTime @db.Timestamptz(6) @default(now())
+  rel_fi_statement_account_fk FiCarrierAccount @relation("fi_statement_account_fk", fields: [carrierAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_settlement_statement_fk FiSettlementLine[] @relation("fi_settlement_statement_fk")
+  back_fi_allocation_statement_fk FiRemittanceAllocation[] @relation("fi_allocation_statement_fk")
+  @@unique([carrierAccountId, statementRef], map: "fi_settlement_statement_u0")
+  @@unique([id, carrierAccountId], map: "fi_settlement_statement_u1")
+  @@index([carrierAccountId], map: "fi_settlement_statement_i0")
+  @@map("fi_settlement_statement")
+}
+
+model FiSettlementLine {
+  id String @id
+  statementId String
+  carrierAccountId String
+  externalLineRef String
+  externalShipmentRef String?
+  grossCod Decimal @db.Decimal(65,30)
+  carrierFee Decimal @db.Decimal(65,30)
+  adjustment Decimal @db.Decimal(65,30)
+  netRemittance Decimal @db.Decimal(65,30)
+  currency String
+  rel_fi_settlement_statement_fk FiSettlementStatement @relation("fi_settlement_statement_fk", fields: [statementId, carrierAccountId], references: [id, carrierAccountId], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_match_settlement_fk FiSettlementMatch[] @relation("fi_match_settlement_fk")
+  back_fi_active_line_fk FiSettlementLink[] @relation("fi_active_line_fk")
+  @@unique([statementId, externalLineRef], map: "fi_settlement_line_u0")
+  @@unique([id, carrierAccountId], map: "fi_settlement_line_u1")
+  @@index([carrierAccountId, externalShipmentRef], map: "fi_settlement_line_i0")
+  @@index([statementId, carrierAccountId], map: "fi_settlement_line_i1")
+  @@map("fi_settlement_line")
+}
+
+model FiSettlementMatch {
+  id String @id
+  sellerId String
+  shipmentId String
+  settlementLineId String
+  carrierAccountId String
+  termsId String
+  operationId String
+  policyApprovalRef String
+  rel_fi_settlement_match_seller_fk user @relation("fi_settlement_match_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_journal_match_fk FiJournal[] @relation("fi_journal_match_fk")
+  rel_fi_match_shipment_fk FiShipment @relation("fi_match_shipment_fk", fields: [shipmentId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_match_settlement_fk FiSettlementLine @relation("fi_match_settlement_fk", fields: [settlementLineId, carrierAccountId], references: [id, carrierAccountId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_match_operation_fk FiOperation @relation("fi_match_operation_fk", fields: [operationId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_active_match_fk FiSettlementLink[] @relation("fi_active_match_fk")
+  back_fi_match_revocation_fk FiMatchRevocation[] @relation("fi_match_revocation_fk")
+  rel_fi_match_policy_fk FiPolicyDecision @relation("fi_match_policy_fk", fields: [policyApprovalRef], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_entitlement_match_fk FiWalletEntitlement[] @relation("fi_entitlement_match_fk")
+  rel_fi_match_terms_fk FiShipmentTerms @relation("fi_match_terms_fk", fields: [termsId, sellerId, shipmentId], references: [id, sellerId, shipmentId], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([id, sellerId], map: "fi_settlement_match_u0")
+  @@unique([operationId], map: "fi_settlement_match_u1")
+  @@index([sellerId], map: "fi_settlement_match_i0")
+  @@index([shipmentId, sellerId], map: "fi_settlement_match_i1")
+  @@index([settlementLineId, carrierAccountId], map: "fi_settlement_match_i2")
+  @@index([policyApprovalRef], map: "fi_settlement_match_i3")
+  @@index([termsId, sellerId, shipmentId], map: "fi_settlement_match_i4")
+  @@map("fi_settlement_match")
+}
+
+model FiRemittance {
+  id String @id
+  sourceAccountRef String
+  bankReference String
+  amount Decimal @db.Decimal(65,30)
+  currency String
+  evidenceHash String
+  verifiedBy String
+  receivedAt DateTime @db.Timestamptz(6) @default(now())
+  rel_FiRemittance_verifiedBy_fk user @relation("FiRemittance_verifiedBy_fk", fields: [verifiedBy], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_allocation_remittance_fk FiRemittanceAllocation[] @relation("fi_allocation_remittance_fk")
+  @@unique([sourceAccountRef, bankReference], map: "fi_remittance_u0")
+  @@index([verifiedBy], map: "fi_remittance_i0")
+  @@map("fi_remittance")
+}
+
+model FiRemittanceAllocation {
+  id String @id
+  remittanceId String
+  statementId String
+  amount Decimal @db.Decimal(65,30)
+  operationId String
+  rel_fi_allocation_remittance_fk FiRemittance @relation("fi_allocation_remittance_fk", fields: [remittanceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_allocation_statement_fk FiSettlementStatement @relation("fi_allocation_statement_fk", fields: [statementId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_allocation_operation_fk FiOperation @relation("fi_allocation_operation_fk", fields: [operationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([remittanceId, statementId], map: "fi_remittance_allocation_u0")
+  @@unique([operationId], map: "fi_remittance_allocation_u1")
+  @@index([statementId], map: "fi_remittance_allocation_i0")
+  @@index([remittanceId], map: "fi_remittance_allocation_i1")
+  @@map("fi_remittance_allocation")
+}
+
+model FiPayoutIntent {
+  id String @id
+  sellerId String
+  holdId String
+  operationId String
+  state String
+  externalRequestKey String
+  createdAt DateTime @db.Timestamptz(6) @default(now())
+  rel_fi_payout_intent_seller_fk user @relation("fi_payout_intent_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_payout_hold_fk FiWithdrawalHold @relation("fi_payout_hold_fk", fields: [holdId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_payout_operation_fk FiOperation @relation("fi_payout_operation_fk", fields: [operationId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_payout_event_intent_fk FiPayoutEvent[] @relation("fi_payout_event_intent_fk")
+  @@unique([holdId], map: "fi_payout_intent_u0")
+  @@unique([operationId], map: "fi_payout_intent_u1")
+  @@unique([externalRequestKey], map: "fi_payout_intent_u2")
+  @@index([sellerId], map: "fi_payout_intent_i0")
+  @@map("fi_payout_intent")
+}
+
+model FiPayoutEvidence {
+  id String @id
+  sellerId String
+  holdId String
+  sourceAccountRef String
+  bankReference String
+  amount Decimal @db.Decimal(65,30)
+  currency String
+  evidenceHash String
+  verifiedBy String
+  verifiedAt DateTime @db.Timestamptz(6) @default(now())
+  rel_fi_payout_evidence_seller_fk user @relation("fi_payout_evidence_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_payout_evidence_hold_fk FiWithdrawalHold @relation("fi_payout_evidence_hold_fk", fields: [holdId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_payout_evidence_actor_fk user @relation("fi_payout_evidence_actor_fk", fields: [verifiedBy], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([holdId], map: "fi_payout_evidence_u0")
+  @@unique([sourceAccountRef, bankReference], map: "fi_payout_evidence_u1")
+  @@index([sellerId], map: "fi_payout_evidence_i0")
+  @@index([verifiedBy], map: "fi_payout_evidence_i1")
+  @@map("fi_payout_evidence")
+}
+
+model FiPayoutEvent {
+  id String @id
+  intentId String
+  operationId String
+  sequence Int
+  state String
+  evidenceClass String
+  evidenceRef String
+  createdAt DateTime @db.Timestamptz(6) @default(now())
+  rel_fi_payout_event_intent_fk FiPayoutIntent @relation("fi_payout_event_intent_fk", fields: [intentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_payout_event_operation_fk FiOperation @relation("fi_payout_event_operation_fk", fields: [operationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([operationId], map: "fi_payout_event_u0")
+  @@unique([intentId, sequence], map: "fi_payout_event_u1")
+  @@index([intentId], map: "fi_payout_event_i0")
+  @@map("fi_payout_event")
+}
+
+model FiSettlementLink {
+  shipmentId String @id
+  sellerId String
+  settlementLineId String
+  matchId String
+  rel_fi_settlement_link_seller_fk user @relation("fi_settlement_link_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_active_match_fk FiSettlementMatch @relation("fi_active_match_fk", fields: [matchId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_active_line_fk FiSettlementLine @relation("fi_active_line_fk", fields: [settlementLineId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_active_shipment_fk FiShipment @relation("fi_active_shipment_fk", fields: [shipmentId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([settlementLineId], map: "fi_settlement_link_u0")
+  @@unique([matchId], map: "fi_settlement_link_u1")
+  @@index([sellerId], map: "fi_settlement_link_i0")
+  @@map("fi_settlement_link")
+}
+
+model FiMatchRevocation {
+  id String @id
+  matchId String
+  operationId String
+  reason String
+  createdAt DateTime @db.Timestamptz(6) @default(now())
+  rel_fi_match_revocation_fk FiSettlementMatch @relation("fi_match_revocation_fk", fields: [matchId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_match_revoke_operation_fk FiOperation @relation("fi_match_revoke_operation_fk", fields: [operationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([matchId], map: "fi_match_revocation_u0")
+  @@unique([operationId], map: "fi_match_revocation_u1")
+
+  @@map("fi_match_revocation")
+}
+
+model FiOperationReceipt {
+  operationId String @id
+  result Json
+  createdAt DateTime @db.Timestamptz(6) @default(now())
+  rel_fi_operation_receipt_fk FiOperation @relation("fi_operation_receipt_fk", fields: [operationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+
+  @@map("fi_operation_receipt")
+}
+
+model FiStockOperationReceipt {
+  operationId String @id
+  result Json
+  createdAt DateTime @db.Timestamptz(6) @default(now())
+  rel_fi_stock_receipt_fk FiStockOperation @relation("fi_stock_receipt_fk", fields: [operationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+
+  @@map("fi_stock_operation_receipt")
+}
+
+model FiPolicyDecision {
+  id String @id
+  code String
+  version Int
+  ownerId String
+  evidenceHash String
+  terms Json
+  approvedAt DateTime @db.Timestamptz(6) @default(now())
+  back_fi_operation_policy_fk FiOperation[] @relation("fi_operation_policy_fk")
+  rel_fi_policy_owner_fk user @relation("fi_policy_owner_fk", fields: [ownerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_policy_revocation_fk FiPolicyRevocation[] @relation("fi_policy_revocation_fk")
+  back_fi_recognition_policy_fk FiCostRecognition[] @relation("fi_recognition_policy_fk")
+  back_fi_match_policy_fk FiSettlementMatch[] @relation("fi_match_policy_fk")
+  back_fi_entitlement_policy_fk FiWalletEntitlement[] @relation("fi_entitlement_policy_fk")
+  back_fi_terms_policy_fk FiShipmentTerms[] @relation("fi_terms_policy_fk")
+  @@unique([code, version], map: "fi_policy_decision_u0")
+  @@index([ownerId], map: "fi_policy_decision_i0")
+  @@map("fi_policy_decision")
+}
+
+model FiPolicyRevocation {
+  id String @id
+  decisionId String
+  revokedBy String
+  reason String
+  createdAt DateTime @db.Timestamptz(6) @default(now())
+  rel_fi_policy_revocation_fk FiPolicyDecision @relation("fi_policy_revocation_fk", fields: [decisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_policy_revoke_actor_fk user @relation("fi_policy_revoke_actor_fk", fields: [revokedBy], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([decisionId], map: "fi_policy_revocation_u0")
+  @@index([revokedBy], map: "fi_policy_revocation_i0")
+  @@map("fi_policy_revocation")
+}
+
+model FiWalletEntitlement {
+  id String @id
+  sellerId String
+  operationId String
+  amount Decimal @db.Decimal(65,30)
+  policyApprovalRef String
+  approvedBy String
+  evidenceHash String
+  settlementMatchId String?
+  dispositionId String?
+  quantity Int?
+  rel_fi_wallet_entitlement_seller_fk user @relation("fi_wallet_entitlement_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_entitlement_operation_fk FiOperation @relation("fi_entitlement_operation_fk", fields: [operationId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_entitlement_match_fk FiSettlementMatch? @relation("fi_entitlement_match_fk", fields: [settlementMatchId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_entitlement_disposition_fk FiDisposition? @relation("fi_entitlement_disposition_fk", fields: [dispositionId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_entitlement_policy_fk FiPolicyDecision @relation("fi_entitlement_policy_fk", fields: [policyApprovalRef], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_entitlement_actor_fk user @relation("fi_entitlement_actor_fk", fields: [approvedBy], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([operationId], map: "fi_wallet_entitlement_u0")
+  @@unique([settlementMatchId], map: "fi_wallet_entitlement_u1")
+  @@unique([dispositionId], map: "fi_wallet_entitlement_u2")
+  @@index([sellerId], map: "fi_wallet_entitlement_i0")
+  @@index([policyApprovalRef], map: "fi_wallet_entitlement_i1")
+  @@index([approvedBy], map: "fi_wallet_entitlement_i2")
+  @@map("fi_wallet_entitlement")
+}
+
+model FiLineCharge {
+  id String @id
+  sellerId String
+  lineId String
+  snapshotId String
+  operationId String
+  unitCharge Decimal @db.Decimal(65,30)
+  orderFee Decimal @db.Decimal(65,30)
+  rel_fi_line_charge_seller_fk user @relation("fi_line_charge_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_charge_line_fk FiOrderLine @relation("fi_charge_line_fk", fields: [lineId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_charge_snapshot_fk FiCostSnapshot @relation("fi_charge_snapshot_fk", fields: [snapshotId, sellerId, lineId], references: [id, sellerId, lineId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_charge_operation_fk FiOperation @relation("fi_charge_operation_fk", fields: [operationId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([lineId], map: "fi_line_charge_u0")
+  @@unique([operationId, lineId], map: "fi_line_charge_u1")
+  @@index([sellerId], map: "fi_line_charge_i0")
+  @@index([snapshotId, sellerId, lineId], map: "fi_line_charge_i1")
+  @@index([operationId, sellerId], map: "fi_line_charge_i2")
+  @@map("fi_line_charge")
+}
+
+model FiShipmentTerms {
+  id String @id
+  sellerId String
+  shipmentId String
+  version Int
+  source String
+  expectedCod Decimal? @db.Decimal(65,30)
+  currency String
+  evidenceHash String
+  policyApprovalRef String
+  operationId String
+  createdAt DateTime @db.Timestamptz(6) @default(now())
+  rel_fi_shipment_terms_seller_fk user @relation("fi_shipment_terms_seller_fk", fields: [sellerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_terms_shipment_fk FiShipment @relation("fi_terms_shipment_fk", fields: [shipmentId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_terms_operation_fk FiOperation @relation("fi_terms_operation_fk", fields: [operationId, sellerId], references: [id, sellerId], onDelete: Restrict, onUpdate: Restrict)
+  rel_fi_terms_policy_fk FiPolicyDecision @relation("fi_terms_policy_fk", fields: [policyApprovalRef], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  back_fi_match_terms_fk FiSettlementMatch[] @relation("fi_match_terms_fk")
+  @@unique([shipmentId, version], map: "fi_shipment_terms_u0")
+  @@unique([id, sellerId, shipmentId], map: "fi_shipment_terms_u1")
+  @@unique([operationId], map: "fi_shipment_terms_u2")
+  @@index([sellerId], map: "fi_shipment_terms_i0")
+  @@index([shipmentId, sellerId], map: "fi_shipment_terms_i1")
+  @@index([policyApprovalRef], map: "fi_shipment_terms_i2")
+  @@map("fi_shipment_terms")
+}

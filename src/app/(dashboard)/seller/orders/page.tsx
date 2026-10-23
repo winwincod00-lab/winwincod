@@ -1,19 +1,20 @@
+import { getSessionUser } from '@/lib/api-utils';
+import { order_status } from "@prisma/client";
 import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import SellerOrdersClient from "./SellerOrdersClient";
 import { PERIOD_LABELS } from "@/components/ui/DateDropdown";
 
 export const dynamic = "force-dynamic";
 
-type SearchParams = Promise<{ period?: string; from?: string; to?: string }>;
+type SearchParams = Promise<{ period?: string; from?: string; to?: string; status?: string }>;
 
 export default async function SellerOrdersPage({ searchParams }: { searchParams: SearchParams }) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "SELLER") redirect("/login");
+  const user = await getSessionUser();
+  if (!user || user.role !== "SELLER") redirect("/login");
 
   const params = await searchParams;
+  const status = Object.values(order_status).find(value => value === params.status);
   const period = params.period ?? "month";
 
   const now = new Date();
@@ -25,15 +26,17 @@ export default async function SellerOrdersPage({ searchParams }: { searchParams:
   const periodFrom = new Date(`${fromStr}T00:00:00.000Z`);
   const periodTo = new Date(`${toStr}T23:59:59.999Z`);
 
+  if (Number.isNaN(periodFrom.getTime()) || Number.isNaN(periodTo.getTime()) || periodFrom > periodTo) redirect("/seller/orders");
+
   const todayStr = now.toISOString().slice(0, 10);
   const todayStart = new Date(`${todayStr}T00:00:00.000Z`);
   const todayEnd = new Date(`${todayStr}T23:59:59.999Z`);
 
-  const sellerId = session.user.id;
+  const sellerId = user.id;
 
   const [orders, todayGroups] = await Promise.all([
     prisma.order.findMany({
-      where: { sellerId, createdAt: { gte: periodFrom, lte: periodTo } },
+      where: { sellerId, status, createdAt: status ? undefined : { gte: periodFrom, lte: periodTo } },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -45,6 +48,7 @@ export default async function SellerOrdersPage({ searchParams }: { searchParams:
         codAmount: true,
         netProfit: true,
         status: true,
+        batchId: true,
         trackingNumber: true,
         city: true,
         createdAt: true,
@@ -82,7 +86,7 @@ export default async function SellerOrdersPage({ searchParams }: { searchParams:
       period={period}
       from={fromStr}
       to={toStr}
-      periodLabel={PERIOD_LABELS[period] ?? "هذا الشهر"}
+      periodLabel={status ? `${status} · جميع الفترات / Toutes périodes` : PERIOD_LABELS[period] ?? "هذا الشهر"}
     />
   );
 }

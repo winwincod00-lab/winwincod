@@ -325,30 +325,39 @@ function TxCard({ item }: { item: WalletItem }) {
 
 export default function SellerWalletPage() {
   const { t, lang } = useLanguage();
-  const [balance, setBalance]       = useState(0);
+  const [balance, setBalance]       = useState<number | null>(null);
   const [items, setItems]           = useState<WalletItem[]>([]);
-  const [stats, setStats]           = useState<Stats>({ totalDeposits: 0, totalDeductions: 0, totalProfits: 0 });
+  const [stats, setStats]           = useState<Stats | null>(null);
   const [page, setPage]             = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal]           = useState(0);
   const [loading, setLoading]       = useState(true);
+  const [balanceError, setBalanceError] = useState(false);
+  const [balanceLoading, setBalanceLoading] = useState(true);
+  const [historyError, setHistoryError] = useState(false);
   const [showModal, setShowModal]   = useState(false);
 
   const fetchBalance = useCallback(async () => {
-    const res = await axios.get("/api/seller/wallet/balance");
-    setBalance(res.data.balance);
+    setBalanceLoading(true); setBalanceError(false);
+    try {
+      const res = await axios.get("/api/seller/wallet/balance");
+      if (typeof res.data.balance !== 'number' || !Number.isFinite(res.data.balance)) throw new Error('Invalid balance');
+      setBalance(res.data.balance);
+    } catch { setBalance(null); setBalanceError(true); }
+    finally { setBalanceLoading(false); }
   }, []);
 
   const fetchHistory = useCallback(async (p = 1) => {
-    setLoading(true);
+    setLoading(true); setHistoryError(false);
     try {
       const res = await axios.get(`/api/seller/wallet/history?page=${p}&limit=20`);
       setItems(res.data.items);
       setStats(res.data.stats);
-      setPage(res.data.page);
+      setPage(p);
       setTotalPages(res.data.totalPages);
       setTotal(res.data.total);
     } catch {
+      setHistoryError(true); setStats(null);
       toast.error(lang === "fr" ? "Erreur de chargement" : "فشل جلب السجل");
     } finally {
       setLoading(false);
@@ -380,7 +389,7 @@ export default function SellerWalletPage() {
           <div>
             <p className="text-blue-100 text-sm font-bold mb-1">{t("wallet.currentBalance")}</p>
             <div className="flex items-end gap-2">
-              <span className="text-3xl md:text-5xl font-black text-white">{fmt(balance)}</span>
+              <span className="text-3xl md:text-5xl font-black text-white">{balanceLoading ? "…" : balance === null ? "—" : fmt(balance)}</span>
               <span className="text-base md:text-xl text-blue-200 font-bold mb-1">
                 {lang === "fr" ? "MAD" : "درهم"}
               </span>
@@ -398,12 +407,14 @@ export default function SellerWalletPage() {
         </div>
       </div>
 
+      {balanceError && <div role="alert" className="rounded-xl border border-red-300 bg-white p-3">{lang === 'fr' ? 'Solde indisponible.' : 'تعذر تحميل الرصيد.'}<button className="p-3 underline" onClick={fetchBalance}>{lang === 'fr' ? 'Réessayer' : 'إعادة المحاولة'}</button></div>}
+      <p className="text-sm text-slate-600">{lang === 'fr' ? 'Le bénéfice affiché correspond aux écritures enregistrées, pas à une prévision. Le solde comprend aussi les dépôts et déductions ; consultez les mouvements pour le rapprochement.' : 'الأرباح المعروضة قيود مسجلة وليست توقعات. الرصيد يشمل أيضاً الشحن والخصم؛ راجع الحركات للتسوية.'}</p>
       {/* ── Stats row ── */}
-      <div className="grid grid-cols-3 gap-2 md:gap-4">
+      {!loading && stats && <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 md:gap-4">
         <StatCard icon={<CheckCircle className="w-5 h-5 text-green-500" />} label={t("wallet.totalDeposits")}   value={stats.totalDeposits}   color="bg-green-50" />
         <StatCard icon={<Package className="w-5 h-5 text-red-400" />}       label={t("wallet.totalDeductions")} value={stats.totalDeductions} color="bg-red-50" />
         <StatCard icon={<DollarSign className="w-5 h-5 text-amber-500" />}  label={t("wallet.totalProfits")}    value={stats.totalProfits}    color="bg-amber-50" />
-      </div>
+      </div>}
 
       {/* ── Transaction history ── */}
       <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-sm overflow-hidden">
@@ -416,7 +427,7 @@ export default function SellerWalletPage() {
           )}
         </div>
 
-        {loading ? (
+        {historyError ? <div role="alert" className="p-4">{lang === 'fr' ? 'Historique indisponible.' : 'تعذر تحميل الحركات.'}<button className="p-3 underline" onClick={() => fetchHistory(page)}>{lang === 'fr' ? 'Réessayer' : 'إعادة المحاولة'}</button></div> : loading ? (
           <div className="flex items-center justify-center py-16">
             <div className="w-8 h-8 border-4 border-[#4361EE] border-t-transparent rounded-full animate-spin" />
           </div>

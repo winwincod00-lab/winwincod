@@ -1,3 +1,5 @@
+import { getSessionUser } from '@/lib/api-utils';
+import { redirect } from 'next/navigation';
 import { Suspense } from "react";
 import { cookies } from "next/headers";
 import {
@@ -30,6 +32,8 @@ const AVATAR_COLORS = [
 ];
 
 export default async function AdminDashboard({ searchParams }: { searchParams: SearchParams }) {
+  const user = await getSessionUser();
+  if (!user || user.role !== 'ADMIN') redirect('/login');
   const sp = await searchParams;
   const cookieStore = await cookies();
   const lang = cookieStore.get("winwincod_lang")?.value === "fr" ? "fr" : "ar";
@@ -349,7 +353,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: S
           <div className="flex items-center justify-between mb-5">
             <div>
               <h3 className="font-black text-[#1E293B] text-base">{msgs.dashboard.topSellers}</h3>
-              <p className="text-slate-400 text-xs mt-0.5">{periodLabel} — {msgs.dashboard.sortedByOrders}</p>
+              <p className="text-slate-400 text-xs mt-0.5">{periodLabel} — {msgs.sidebar.sortedByOrders}</p>
             </div>
             <div className="w-10 h-10 bg-[#EEF2FF] rounded-2xl flex items-center justify-center">
               <Users className="w-5 h-5 text-[#4361EE]" />

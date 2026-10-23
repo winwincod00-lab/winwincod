@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { Package, CheckCircle, DollarSign, Lightbulb, TrendingUp, RotateCcw } from "lucide-react";
+import Link from "next/link";
 import axios from "axios";
 import { useLanguage } from "@/context/LanguageContext";
 import {
@@ -28,6 +29,8 @@ export default function SellerDashboard() {
   const [from, setFrom] = useState(defaults.from);
   const [to, setTo] = useState(defaults.to);
   const [data, setData] = useState<any>(null);
+  const [error, setError] = useState(false);
+  const [revision, setRevision] = useState(0);
   const [loading, setLoading] = useState(true);
   const { data: session } = useSession();
   const { t, lang } = useLanguage();
@@ -46,12 +49,14 @@ export default function SellerDashboard() {
   };
 
   useEffect(() => {
-    setLoading(true);
+    const controller = new AbortController();
+    setLoading(true); setError(false);
     axios
-      .get(`/api/seller/analytics?from=${from}&to=${to}`)
+      .get(`/api/seller/analytics?from=${from}&to=${to}`, { signal: controller.signal })
       .then((res) => { setData(res.data); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [from, to]);
+      .catch(() => { if (!controller.signal.aborted) { setError(true); setLoading(false); } });
+    return () => controller.abort();
+  }, [from, to, revision]);
 
   const handleDateChange = (p: string, f: string, t: string) => {
     setPeriod(p);
@@ -81,8 +86,11 @@ export default function SellerDashboard() {
         </div>
       </div>
 
-      {loading || !data ? (
-        <div className="space-y-4">
+      {error ? <div role="alert" className="rounded-xl border border-red-200 p-4 bg-white">
+        {lang === 'fr' ? 'Impossible de charger les données.' : 'تعذر تحميل البيانات.'}
+        <button className="p-3 underline" onClick={() => setRevision(n => n + 1)}>{lang === 'fr' ? 'Réessayer' : 'إعادة المحاولة'}</button>
+      </div> : loading || !data ? (
+        <div className="space-y-4" role="status" aria-label={lang === "fr" ? "Chargement" : "جاري التحميل"}>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="h-40 bg-white rounded-2xl border border-slate-100 animate-pulse" />
@@ -95,6 +103,20 @@ export default function SellerDashboard() {
         </div>
       ) : (
         <>
+          <section className="bg-white border rounded-2xl p-4 space-y-3">
+            <h2 className="font-bold">{lang === 'fr' ? 'À traiter · toutes périodes' : 'إجراءات اليوم · جميع الفترات'}</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { href: '/seller/orders/drafts', count: data.queues?.DRAFT ?? 0, fr: 'Envoyer pour confirmation', ar: 'إرسال المسودات للتأكيد' },
+                { href: '/seller/orders?status=PENDING_CONFIRMATION', count: data.queues?.PENDING_CONFIRMATION ?? 0, fr: 'Confirmer les commandes', ar: 'تأكيد الطلبات' },
+                { href: '/seller/batches', count: data.queues?.CONFIRMED ?? 0, fr: 'Vérifier et payer un lot (5 minimum)', ar: 'فحص ودفع دفعة (5 على الأقل)' },
+                { href: '/seller/batches', count: data.queues?.WAITING_PAYMENT ?? 0, fr: 'Lots à payer', ar: 'دفعات بانتظار الدفع' },
+                { href: '/seller/orders?status=PROCESSING', count: data.queues?.PROCESSING ?? 0, fr: 'En préparation entrepôt', ar: 'قيد تجهيز المستودع' },
+                { href: '/seller/orders?status=RETURNED', count: data.queues?.RETURNED ?? 0, fr: 'Retours · inspection requise avant restockage', ar: 'مرتجعات · الفحص مطلوب قبل إعادة التخزين' },
+              ].map(q => <Link key={q.href + q.fr} href={q.href} className="border rounded-xl p-3 hover:bg-blue-50"><strong className="block text-2xl">{q.count}</strong>{lang === 'fr' ? q.fr : q.ar}</Link>)}
+            </div>
+            <Link className="inline-block p-2 text-blue-700 underline" href="/seller/wallet">{lang === 'fr' ? 'Portefeuille et écritures de rapprochement' : 'المحفظة وقيود التسوية'}</Link>
+          </section>
           {/* ── Stats Cards ───────────────────────────────────── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
 

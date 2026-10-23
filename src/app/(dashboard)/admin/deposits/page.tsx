@@ -1,5 +1,7 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useSession } from 'next-auth/react';
+import { submissionKey, clearSubmissionKey } from '@/lib/order-submission-client';
+import { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { CheckCircle, XCircle, RotateCcw, Bell, CreditCard, DollarSign } from "lucide-react";
@@ -55,8 +57,8 @@ function RejectModal({
       toast.success("تم رفض الطلب", { id: tid });
       onDone();
       onClose();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || "حدث خطأ", { id: tid });
+    } catch (err: unknown) {
+      toast.error(axios.isAxiosError(err) ? err.response?.data?.error || "حدث خطأ" : "حدث خطأ", { id: tid });
     } finally {
       setLoading(false);
     }
@@ -113,28 +115,44 @@ function TopupModal({
   onClose: () => void;
   onDone: () => void;
 }) {
-  const [amount, setAmount] = useState("");
-  const [note, setNote] = useState("");
+  const { data: session } = useSession();
+  const [amount, setAmount] = useState('');
+  const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
-
+  const [uncertain, setUncertain] = useState(false);
+  const [completed, setCompleted] = useState(false);
+  const lock = useRef(false);
+  const pending = useRef<{ targetUserId: string; amount: string; note: string } | null>(null);
+  const pendingActor = useRef<string | null>(null);
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    const tid = toast.loading("جاري الشحن...");
+    if (lock.current || !session?.user?.id) return;
+    if (pendingActor.current && pendingActor.current !== session.user.id) { toast.error('تغير الحساب. راجع القيود قبل أي عملية جديدة'); return; }
+    pendingActor.current ??= session.user.id;
+    lock.current = true; setLoading(true);
+    const tid = toast.loading('جاري الشحن...');
+    let sent = false;
+    let acknowledged = false;
     try {
-      await axios.post("/api/admin/wallet/topup", {
-        targetUserId: seller.id,
-        amount: Number(amount),
-        note: note || undefined,
-      });
-      toast.success(`تم شحن ${Number(amount).toFixed(2)} د.م لـ ${seller.name}`, { id: tid });
-      onDone();
-      onClose();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || "حدث خطأ", { id: tid });
-    } finally {
-      setLoading(false);
-    }
+      const payload = pending.current ?? { targetUserId: seller.id, amount, note };
+      pending.current ??= { ...payload };
+      const key = await submissionKey(session.user.id, 'admin-topup:' + seller.id, payload);
+      sent = true;
+      await axios.post('/api/admin/wallet/topup', payload, { headers: { 'Idempotency-Key': key } });
+      acknowledged = true; setCompleted(true);
+      // A successful save must not be turned into an uncertain retry by local cleanup.
+      try { clearSubmissionKey(session.user.id, 'admin-topup:' + seller.id); } catch { /* Receipt remains safe for replay. */ }
+      toast.success('تم تأكيد شحن المحفظة', { id: tid });
+      onDone(); onClose();
+    } catch (error) {
+      if (acknowledged) { toast.error('تم الشحن. راجع سجل المحفظة؛ لا ترسل العملية مرة أخرى', { id: tid }); return; }
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+      const unknown = sent && (!status || status >= 500);
+      setUncertain(unknown);
+      if (!unknown) { pending.current = null; pendingActor.current = null; }
+      lock.current = false;
+      toast.error(unknown ? 'نتيجة غير مؤكدة. أعد المحاولة بنفس البيانات؛ لا تنشئ شحناً جديداً قبل مراجعة القيود' : 'تعذر الشحن. راجع البيانات والاتصال', { id: tid });
+    } finally { setLoading(false); }
   };
 
   return (
@@ -142,7 +160,7 @@ function TopupModal({
       <div className="bg-white rounded-t-2xl md:rounded-2xl shadow-2xl w-full md:max-w-md">
         <div className="flex items-center justify-between p-5 border-b border-slate-100">
           <h3 className="text-lg font-black text-[#1E293B]">شحن مباشر للمحفظة</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 text-2xl leading-none">×</button>
+          <button disabled={loading || uncertain} onClick={onClose} className="text-slate-400 hover:text-slate-700 text-2xl leading-none">×</button>
         </div>
         <form onSubmit={submit} className="p-5 space-y-4">
           <div className="bg-[#EEF2FF] rounded-xl p-3.5 border border-blue-100">
@@ -158,6 +176,7 @@ function TopupModal({
               type="number"
               step="0.01"
               min="1"
+              disabled={loading || uncertain || completed}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
@@ -168,6 +187,7 @@ function TopupModal({
             <label className="text-xs font-bold text-slate-500 block mb-1.5">ملاحظة (اختياري)</label>
             <input
               type="text"
+              disabled={loading || uncertain}
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="شحن يدوي من الإدارة..."
@@ -175,15 +195,15 @@ function TopupModal({
             />
           </div>
           <div className="flex gap-3">
-            <button type="button" onClick={onClose} className="flex-1 border border-slate-200 text-slate-600 py-3 rounded-xl font-bold hover:bg-slate-50 transition min-h-[48px]">
+            <button type="button" disabled={loading || uncertain} onClick={onClose} className="flex-1 border border-slate-200 text-slate-600 py-3 rounded-xl font-bold hover:bg-slate-50 transition min-h-[48px]">
               إلغاء
             </button>
             <button
               type="submit"
-              disabled={loading || !amount}
+              disabled={loading || completed || !amount || !session?.user?.id}
               className="flex-1 bg-[#4361EE] hover:bg-[#3254D4] text-white py-3 rounded-xl font-bold transition disabled:opacity-50 min-h-[48px]"
             >
-              {loading ? "جاري..." : <span className="flex items-center justify-center gap-1">شحن الرصيد <CheckCircle className="w-4 h-4" /></span>}
+              {loading ? "جاري..." : <span className="flex items-center justify-center gap-1">{completed ? 'تم الشحن' : uncertain ? 'إعادة المحاولة الآمنة' : 'شحن الرصيد'} <CheckCircle className="w-4 h-4" /></span>}
             </button>
           </div>
         </form>
@@ -257,8 +277,8 @@ export default function AdminDepositsPage() {
       const res = await axios.post("/api/admin/deposits/approve", { id });
       toast.success(`تم شحن الرصيد بنجاح — الرصيد الجديد: ${Number(res.data.newBalance).toFixed(2)} د.م`, { id: tid, duration: 5000 });
       fetchDeposits();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || "حدث خطأ", { id: tid });
+    } catch (err: unknown) {
+      toast.error(axios.isAxiosError(err) ? err.response?.data?.error || "حدث خطأ" : "حدث خطأ", { id: tid });
     }
   };
 

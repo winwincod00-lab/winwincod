@@ -1,78 +1,56 @@
 "use client";
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
-import { getCart, saveCart, clearCart as clearStorage, CartItem } from "@/lib/cart";
-
-type AddItemInput = Omit<CartItem, "cartId" | "quantity"> & { quantity?: number };
-
+import { useSession } from 'next-auth/react';
+import { createContext, useContext, useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
+import { getCart, saveCart, clearCart, canAddToCart, changeCartQuantity, type CartItem } from '@/lib/cart';
+type AddItemInput = Omit<CartItem, 'cartId' | 'quantity'> & { quantity?: number };
 type CartCtx = {
-  items: CartItem[];
-  addItem: (product: AddItemInput) => void;
-  removeItem: (cartId: string) => void;
-  updateQty: (cartId: string, delta: number) => void;
-  clearAll: () => void;
-  totalCount: number;
-  drawerOpen: boolean;
-  openDrawer: () => void;
-  closeDrawer: () => void;
+  ready: boolean; sellerId: string; items: CartItem[];
+  addItem: (product: AddItemInput) => boolean;
+  removeItem: (cartId: string) => void; updateQty: (cartId: string, delta: number) => void;
+  clearAll: () => void; totalCount: number; drawerOpen: boolean; openDrawer: () => void; closeDrawer: () => void;
 };
-
 const CartContext = createContext<CartCtx | null>(null);
-
-export function CartProvider({ children }: { children: ReactNode }) {
+function SellerCartProvider({ children, sellerId }: { children: ReactNode; sellerId: string }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const currentItems = useRef<CartItem[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
-
-  useEffect(() => { setItems(getCart()); }, []);
-
-  const persist = (next: CartItem[]) => { setItems(next); saveCart(next); };
-
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let mounted = true;
+    Promise.resolve().then(() => {
+      if (mounted) { const stored = getCart(sellerId); currentItems.current = stored; setItems(stored); setReady(true); }
+    });
+    return () => { mounted = false; };
+  }, [sellerId]);
+  const commit = useCallback((next: CartItem[]) => {
+    saveCart(sellerId, next); currentItems.current = next; setItems(next);
+  }, [sellerId]);
   const addItem = useCallback((product: AddItemInput) => {
-    const newItem: CartItem = {
-      ...product,
-      quantity: product.quantity ?? 1,
-      cartId: `${product.productId}-${Date.now()}`,
-    };
-    setItems(prev => {
-      const next = [...prev, newItem];
-      saveCart(next);
-      return next;
-    });
-    setDrawerOpen(true);
-  }, []);
-
+    const quantity = product.quantity ?? 1;
+    if (!sellerId || !ready || !canAddToCart(currentItems.current, product.productId, quantity, product.stock)) return false;
+    try { commit([...currentItems.current, { ...product, quantity, cartId: crypto.randomUUID() }]); }
+    catch { return false; }
+    setDrawerOpen(true); return true;
+  }, [sellerId, ready, commit]);
   const removeItem = useCallback((cartId: string) => {
-    setItems(prev => { const next = prev.filter(i => i.cartId !== cartId); saveCart(next); return next; });
-  }, []);
-
+    if (sellerId && ready) commit(currentItems.current.filter(item => item.cartId !== cartId));
+  }, [sellerId, ready, commit]);
   const updateQty = useCallback((cartId: string, delta: number) => {
-    setItems(prev => {
-      const next = prev.map(i =>
-        i.cartId === cartId
-          ? { ...i, quantity: Math.max(1, Math.min(i.stock, i.quantity + delta)) }
-          : i
-      );
-      saveCart(next);
-      return next;
-    });
-  }, []);
-
-  const clearAll = useCallback(() => { clearStorage(); setItems([]); }, []);
-
-  return (
-    <CartContext.Provider value={{
-      items, addItem, removeItem, updateQty, clearAll,
-      totalCount: items.reduce((sum, i) => sum + i.quantity, 0),
-      drawerOpen,
-      openDrawer: () => setDrawerOpen(true),
-      closeDrawer: () => setDrawerOpen(false),
-    }}>
-      {children}
-    </CartContext.Provider>
-  );
+    if (sellerId && ready) commit(changeCartQuantity(currentItems.current, cartId, delta));
+  }, [sellerId, ready, commit]);
+  const clearAll = useCallback(() => { clearCart(sellerId); currentItems.current = []; setItems([]); }, [sellerId]);
+  return <CartContext.Provider value={{ ready, sellerId, items, addItem, removeItem, updateQty, clearAll,
+    totalCount: items.reduce((sum, item) => sum + item.quantity, 0), drawerOpen,
+    openDrawer: () => setDrawerOpen(true), closeDrawer: () => setDrawerOpen(false) }}>{children}</CartContext.Provider>;
 }
-
+// Remount on an account change, before rendering the next seller's cart.
+export function CartProvider({ children }: { children: ReactNode }) {
+  const { data: session } = useSession();
+  const sellerId = session?.user?.role === 'SELLER' ? session.user.id : '';
+  return <SellerCartProvider key={sellerId} sellerId={sellerId}>{children}</SellerCartProvider>;
+}
 export function useCart() {
-  const ctx = useContext(CartContext);
-  if (!ctx) throw new Error("useCart must be inside CartProvider");
-  return ctx;
+  const context = useContext(CartContext);
+  if (!context) throw new Error('useCart must be inside CartProvider');
+  return context;
 }

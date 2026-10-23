@@ -1,3 +1,5 @@
+import { Prisma } from "@prisma/client";
+import { decideDeposit } from "./walletApprovalService";
 import prisma from "@/lib/prisma";
 import {
   notifyDepositApproved,
@@ -5,13 +7,20 @@ import {
   notifyProfitCredited,
 } from "./notificationService";
 
+function requireMoney(amount: number, allowZero = false) {
+  if (!Number.isFinite(amount) || (allowZero ? amount < 0 : amount <= 0)) {
+    throw new Error('Invalid wallet amount');
+  }
+}
+
 export async function creditWallet(
   userId: string,
   amount: number,
-  type: any,
+  type: Prisma.transactionCreateInput['type'],
   refId?: string,
   description?: string
 ) {
+  requireMoney(amount);
   return await prisma.$transaction(async (tx) => {
     const wallet = await tx.wallet.update({
       where: { userId },
@@ -29,26 +38,26 @@ export async function creditWallet(
 export async function chargeWallet(
   userId: string,
   amount: number,
-  type: any,
+  type: Prisma.transactionCreateInput['type'],
   refId?: string,
   description?: string
 ) {
+  requireMoney(amount);
   return await prisma.$transaction(async (tx) => {
     const wallet = await tx.wallet.findUniqueOrThrow({ where: { userId } });
 
-    if (Number(wallet.balance) < amount) {
+    if (!Number.isFinite(amount) || amount <= 0 || new Prisma.Decimal(wallet.balance).lt(amount)) {
       throw new Error("رصيد المحفظة غير كافٍ");
     }
 
-    const updatedWallet = await tx.wallet.update({
-      where: { userId },
-      data: { balance: { decrement: amount } },
-    });
+    const debit = await tx.wallet.updateMany({ where: { userId, balance: { gte: new Prisma.Decimal(amount) } }, data: { balance: { decrement: new Prisma.Decimal(amount) } } });
+    if (debit.count !== 1) throw new Error("Insufficient balance");
+    const updatedWallet = await tx.wallet.findUniqueOrThrow({ where: { userId } });
 
     await tx.transaction.create({
       data: {
         walletId: wallet.id,
-        amount: -amount,
+        amount: new Prisma.Decimal(amount).negated(),
         type,
         referenceId: refId,
         description,
@@ -66,65 +75,22 @@ export async function createDepositRequest(
   amount: number,
   receiptUrl: string
 ) {
+  requireMoney(amount);
   return prisma.depositrequest.create({
     data: { sellerId, amount, receiptImage: receiptUrl, status: "PENDING" },
   });
 }
 
-export async function approveDeposit(depositId: string) {
-  const deposit = await prisma.depositrequest.findUnique({
-    where: { id: depositId },
-  });
-
-  if (!deposit) throw new Error("طلب الشحن غير موجود");
-  if (deposit.status !== "PENDING") throw new Error("تمت معالجة هذا الطلب مسبقاً");
-
-  const wallet = await prisma.$transaction(async (tx) => {
-    await tx.depositrequest.update({
-      where: { id: depositId },
-      data: { status: "APPROVED" },
-    });
-
-    const w = await tx.wallet.update({
-      where: { userId: deposit.sellerId },
-      data: { balance: { increment: deposit.amount } },
-    });
-
-    await tx.transaction.create({
-      data: {
-        walletId: w.id,
-        amount: deposit.amount,
-        type: "DEPOSIT",
-        referenceId: depositId,
-        description: `شحن رصيد معتمد - طلب رقم ${depositId.slice(-6)}`,
-      },
-    });
-
-    return w;
-  });
-
-  // Fire-and-forget notification
-  notifyDepositApproved(deposit.sellerId, Number(deposit.amount));
-
-  return wallet;
+export async function approveDeposit(depositId: string, actorId: string) {
+  const result = await decideDeposit(depositId, "APPROVED", actorId);
+  if (!result.replayed) void notifyDepositApproved(result.sellerId, Number(result.amount)).catch(() => console.error("Deposit notification failed"));
+  return result.wallet;
 }
 
-export async function rejectDeposit(depositId: string, reason: string) {
-  const deposit = await prisma.depositrequest.findUnique({
-    where: { id: depositId },
-  });
-
-  if (!deposit) throw new Error("طلب الشحن غير موجود");
-  if (deposit.status !== "PENDING") throw new Error("تمت معالجة هذا الطلب مسبقاً");
-
-  const updated = await prisma.depositrequest.update({
-    where: { id: depositId },
-    data: { status: "REJECTED", notes: reason },
-  });
-
-  notifyDepositRejected(deposit.sellerId, Number(deposit.amount), reason);
-
-  return updated;
+export async function rejectDeposit(depositId: string, reason: string, actorId: string) {
+  const result = await decideDeposit(depositId, "REJECTED", actorId, reason);
+  if (!result.replayed) void notifyDepositRejected(result.sellerId, Number(result.amount), reason).catch(() => console.error("Deposit notification failed"));
+  return result;
 }
 
 // ─── Order deduction ─────────────────────────────────────────────────────────
@@ -135,7 +101,10 @@ export async function deductForOrder(
   shippingFee: number,
   productCost: number
 ) {
+  requireMoney(shippingFee, true);
+  requireMoney(productCost, true);
   const total = shippingFee + productCost;
+  requireMoney(total);
 
   return prisma.$transaction(async (tx) => {
     const wallet = await tx.wallet.findUniqueOrThrow({ where: { userId: sellerId } });
@@ -144,10 +113,12 @@ export async function deductForOrder(
       throw new Error("رصيد غير كافٍ، يرجى شحن محفظتك");
     }
 
-    const updatedWallet = await tx.wallet.update({
-      where: { userId: sellerId },
+    const debit = await tx.wallet.updateMany({
+      where: { userId: sellerId, balance: { gte: new Prisma.Decimal(total) } },
       data: { balance: { decrement: total } },
     });
+    if (debit.count !== 1) throw new Error('Insufficient balance');
+    const updatedWallet = await tx.wallet.findUniqueOrThrow({ where: { userId: sellerId } });
 
     await tx.transaction.create({
       data: {
@@ -172,7 +143,11 @@ export async function creditProfit(
   productCost: number,
   shippingFee: number
 ) {
+  requireMoney(sellingPrice, true);
+  requireMoney(productCost, true);
+  requireMoney(shippingFee, true);
   const profit = sellingPrice - productCost - shippingFee;
+  if (!Number.isFinite(profit)) throw new Error('Invalid wallet amount');
 
   if (profit <= 0) return null;
 
@@ -214,6 +189,7 @@ export type WalletHistoryItem = {
 };
 
 const DEPOSIT_TYPE_MAP: Record<string, WalletHistoryItem["type"]> = {
+  DEPOSIT: "DEPOSIT",
   ORDER_PAYMENT: "DEDUCTION",
   SHIPPING_PAYMENT: "DEDUCTION",
   DELIVERY_PROFIT: "PROFIT",
@@ -237,7 +213,6 @@ export async function getWalletHistory(
       ? prisma.transaction.findMany({
           where: {
             walletId: wallet.id,
-            type: { not: "DEPOSIT" }, // deposits shown via depositrequest
           },
           orderBy: { createdAt: "desc" },
         })
@@ -255,14 +230,22 @@ export async function getWalletHistory(
     createdAt: d.createdAt,
   }));
 
-  const txnItems: WalletHistoryItem[] = txns.map((t) => ({
+  const approvedRequests = new Map(deposits.filter(deposit => deposit.status === 'APPROVED').map(deposit => [deposit.id, deposit.amount]));
+  const depositEntryCounts = new Map<string, number>();
+  for (const entry of txns) if (entry.type === 'DEPOSIT' && entry.referenceId) depositEntryCounts.set(entry.referenceId, (depositEntryCounts.get(entry.referenceId) ?? 0) + 1);
+  // Approved request deposits are already displayed above. Manual credits have
+  // real ledger entries but no depositrequest and must not disappear from history.
+  const txnItems: WalletHistoryItem[] = txns.filter(t => {
+    const matched = t.referenceId ? approvedRequests.get(t.referenceId) : undefined;
+    return t.type !== 'DEPOSIT' || matched === undefined || depositEntryCounts.get(t.referenceId!) !== 1 || !new Prisma.Decimal(t.amount).eq(matched);
+  }).map((t) => ({
     id: t.id,
     type: DEPOSIT_TYPE_MAP[t.type] ?? "DEDUCTION",
     amount: Number(t.amount),
     status: "AUTO",
     note: t.description,
     receiptUrl: null,
-    orderId: t.referenceId ?? null,
+    orderId: t.type === 'DEPOSIT' ? null : t.referenceId ?? null,
     createdAt: t.createdAt,
   }));
 

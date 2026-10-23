@@ -33,6 +33,8 @@ export async function POST(req: Request) {
 
 // جلب المنتجات (ليستخدمها البائع والمدير)
 export async function GET() {
+  const user = await getSessionUser();
+  if (!user || user.role !== "ADMIN") return errorResponse("غير مصرح", 401);
   const products = await prisma.product.findMany({
     include: { supplier: { select: { name: true } } }
   });

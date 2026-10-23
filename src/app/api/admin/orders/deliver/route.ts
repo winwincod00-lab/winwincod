@@ -30,12 +30,18 @@ export async function POST(req: Request) {
     if (!order) return errorResponse("الطلب غير موجود", 404);
     if (order.status !== "SHIPPED") return errorResponse("الطلب ليس في حالة شحن", 400);
 
-    const productCost = Number(order.product?.sellerPrice ?? 0) * order.quantity;
+    // Missing cost evidence must never become a zero-cost wallet credit.
+    if (!order.product || !Number.isSafeInteger(order.quantity) || order.quantity < 1 ||
+        !Number.isFinite(Number(order.product.sellerPrice)) || Number(order.product.sellerPrice) < 0) {
+      return errorResponse('تعذر التحقق من تكلفة المنتج؛ يلزم مراجعة مالية قبل التسليم', 409);
+    }
+    const productCost = Number(order.product.sellerPrice) * order.quantity;
+    if (!Number.isFinite(productCost)) return errorResponse('تكلفة المنتج غير صالحة؛ يلزم مراجعة مالية', 409);
     const sellerProfit = Math.max(0, codReceived - productCost - COMMISSION);
 
     await prisma.$transaction(async (tx) => {
-      await tx.order.update({
-        where: { id: orderId },
+      const claim = await tx.order.updateMany({
+        where: { id: orderId, status: "SHIPPED" },
         data: {
           status: "DELIVERED",
           codReceived,
@@ -45,6 +51,8 @@ export async function POST(req: Request) {
         },
       });
 
+      if (claim.count !== 1) throw new Error('تغيرت حالة الطلب، حدّث الصفحة');
+      await tx.orderStatusHistory.create({ data: { orderId, status: 'DELIVERED', userId: user.id } });
       const wallet = await tx.wallet.upsert({
         where: { userId: order.sellerId },
         update: { balance: { increment: sellerProfit } },
@@ -75,7 +83,7 @@ export async function POST(req: Request) {
       sellerProfit,
       message: `تم تسجيل التسليم — ربح البائع: ${sellerProfit.toFixed(2)} د.م`,
     });
-  } catch (error: any) {
-    return errorResponse(error.message, 500);
+  } catch {
+    return errorResponse("تعذر تحديث الطلب؛ تحقق من حالته وحدّث الصفحة", 409);
   }
 }

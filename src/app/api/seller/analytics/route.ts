@@ -21,9 +21,12 @@ export async function GET(request: Request) {
       lte: toParam ? new Date(`${toParam}T23:59:59.999Z`) : now,
     };
 
+    if (Number.isNaN(dateFilter.gte.getTime()) || Number.isNaN(dateFilter.lte.getTime()) || dateFilter.gte > dateFilter.lte) {
+      return errorResponse('فترة غير صالحة', 400);
+    }
     const where = { sellerId: user.id, createdAt: dateFilter };
 
-    const [totalOrders, statusGroups, deliveredAgg, recentOrders] = await Promise.all([
+    const [totalOrders, statusGroups, deliveredAgg, recentOrders, queueGroups] = await Promise.all([
       prisma.order.count({ where }),
       prisma.order.groupBy({
         by: ["status"],
@@ -40,6 +43,7 @@ export async function GET(request: Request) {
         select: { createdAt: true },
         orderBy: { createdAt: "asc" },
       }),
+      prisma.order.groupBy({ by: ['status'], where: { sellerId: user.id }, _count: { id: true } }),
     ]);
 
     const delivered = deliveredAgg._count.id;
@@ -82,6 +86,7 @@ export async function GET(request: Request) {
       totalProfit,
       pieData,
       barData,
+      queues: Object.fromEntries(queueGroups.map(g => [g.status, g._count.id])),
     });
   } catch {
     return errorResponse("فشل جلب الإحصائيات", 500);

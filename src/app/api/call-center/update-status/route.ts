@@ -1,67 +1,22 @@
-import { NextResponse } from "next/server";
-import { getSessionUser, errorResponse } from "@/lib/api-utils";
-import prisma from "@/lib/prisma";
-
+import type { order_status } from '@prisma/client';
+import { NextResponse } from 'next/server';
+import { getSessionUser, errorResponse } from '@/lib/api-utils';
+import { sellerTransitions } from '@/lib/order-policy';
+import prisma from '@/lib/prisma';
 export async function POST(req: Request) {
+  const user = await getSessionUser();
+  if (!user || !['CALL_CENTER', 'ADMIN'].includes(user.role)) return errorResponse('غير مصرح', 401);
   try {
-    const user = await getSessionUser();
-    if (!user || (user.role !== "CALL_CENTER" && user.role !== "ADMIN")) {
-      return errorResponse("غير مصرح", 401);
-    }
-
     const { orderId, status } = await req.json();
-
-    // 1. جلب الطلب مع بيانات المنتج المرتبط به
-    const currentOrder = await prisma.order.findUnique({
-      where: { id: orderId },
-      include: { 
-        product: true, // سحب بيانات المنتج (السعر)
-        batch: true 
-      }
+    if (typeof orderId !== 'string' || typeof status !== 'string') return errorResponse('بيانات غير صالحة', 400);
+    const order = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true, batchId: true } });
+    if (!order) return errorResponse('الطلب غير موجود', 404);
+    if (!sellerTransitions(order.status, order.batchId).includes(status)) return errorResponse('انتقال غير مسموح؛ الدفع والشحن والتسوية إجراءات مستقلة', 409);
+    await prisma.$transaction(async tx => {
+      const claim = await tx.order.updateMany({ where: { id: orderId, status: order.status, batchId: null }, data: { status: status as order_status } });
+      if (claim.count !== 1) throw new Error('تغيرت الحالة');
+      await tx.orderStatusHistory.create({ data: { orderId, status: status as order_status, userId: user.id } });
     });
-
-    if (!currentOrder) return errorResponse("الطلب غير موجود", 404);
-
-    // 2. تحديث حالة الطلب
-    await prisma.order.update({
-      where: { id: orderId },
-      data: { status, updatedAt: new Date() }
-    });
-
-    // 3. الحساب المالي الذكي عند التأكيد
-    if (status === "CONFIRMED" && currentOrder.batchId) {
-      // إذا كان هناك منتج مرتبط، نأخذ سعره، وإلا نستخدم 150 كاحتياط
-      const pricePerItem = currentOrder.product 
-        ? Number(currentOrder.product.sellerPrice) 
-        : 150;
-
-      const totalOrderCost = currentOrder.quantity * pricePerItem;
-
-      // تحديث إجمالي الدفعة
-      await prisma.orderbatch.update({
-        where: { id: currentOrder.batchId },
-        data: {
-          totalAmount: { increment: totalOrderCost }
-        }
-      });
-    }
-
-    // 4. تحويل الحالة لـ WAITING_PAYMENT إذا اكتملت الدفعة
-    if (currentOrder.batchId) {
-      const remaining = await prisma.order.count({
-        where: { batchId: currentOrder.batchId, status: "PENDING_CONFIRMATION" }
-      });
-
-      if (remaining === 0) {
-        await prisma.order.updateMany({
-          where: { batchId: currentOrder.batchId, status: "CONFIRMED" },
-          data: { status: "WAITING_PAYMENT" }
-        });
-      }
-    }
-
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return errorResponse(error.message, 500);
-  }
+  } catch { return errorResponse('تعذر التحديث؛ حدّث الصفحة', 409); }
 }

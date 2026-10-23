@@ -4,6 +4,8 @@ import { getSessionUser, errorResponse } from "@/lib/api-utils";
 
 // 1. جلب بيانات منتج واحد (لغرض التعديل)
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getSessionUser();
+  if (!user || user.role !== "ADMIN") return errorResponse("غير مصرح", 401);
   const { id } = await params;
   const product = await prisma.product.findUnique({ where: { id } });
   return NextResponse.json(product);

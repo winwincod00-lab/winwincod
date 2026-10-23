@@ -32,7 +32,7 @@ export default function MarketplacePage() {
   }, []);
 
   const handleAddToCart = (product: Product) => {
-    addItem({
+    const added = addItem({
       productId: product.id,
       productName: product.name,
       productImage: parseFirstImage(product.images),
@@ -41,6 +41,7 @@ export default function MarketplacePage() {
       stock: product.stock,
       quantity: 1,
     });
+    if (!added) { toast.error("تعذر الإضافة. تحقق من المخزون وتوفر السلة"); return; }
     toast.success(`تمت إضافة "${product.name}" للسلة`);
   };
 

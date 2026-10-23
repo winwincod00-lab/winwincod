@@ -1,4 +1,7 @@
 "use client";
+import { orderReference } from "@/lib/order-reference";
+import { sellerTransitions } from "@/lib/order-policy";
+import toast from "react-hot-toast";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -16,6 +19,7 @@ interface Order {
   codAmount: number;
   netProfit: number;
   status: string;
+  batchId: string | null;
   trackingNumber: string | null;
   city: string;
   createdAt: string;
@@ -53,9 +57,7 @@ const STATUS_STYLE: Record<string, { bg: string; dot: string }> = {
 
 const PER_PAGE = 20;
 
-function fmtRef(id: string, seqId: number | null) {
-  return seqId ? `ORD-${String(seqId).padStart(4, "0")}` : `ORD-${id.slice(0, 4).toUpperCase()}`;
-}
+
 
 function fmtDate(iso: string, lang: string) {
   return new Date(iso).toLocaleDateString(lang === "fr" ? "fr-FR" : "ar-MA", { day: "numeric", month: "short" });
@@ -71,13 +73,13 @@ function StatusBadge({
   onSelect: (id: string, status: string) => void;
   dropdownSide?: "right" | "left";
 }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   const STATUS_LABELS: Record<string, string> = {
     DRAFT:                t("orders.statusDraft"),
     PENDING_CONFIRMATION: t("orders.statusPending"),
     CONFIRMED:            t("orders.statusConfirmed"),
-    WAITING_PAYMENT:      t("orders.statusWaitingPayment"),
+    WAITING_PAYMENT:      lang === 'fr' ? 'Revue Admin / paiement' : 'مراجعة الإدارة / الدفع',
     PROCESSING:           t("orders.statusProcessing"),
     SHIPPED:              t("orders.statusShipped"),
     DELIVERED:            t("orders.statusDelivered"),
@@ -94,7 +96,8 @@ function StatusBadge({
     <div className="relative inline-block" data-dropdown="">
       <button
         onClick={() => onToggle(order.id)}
-        disabled={isUpdating}
+        aria-expanded={isOpen}
+        disabled={isUpdating || sellerTransitions(order.status, order.batchId).length === 0}
         className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition hover:opacity-80 active:scale-95 ${style.bg} ${isUpdating ? "opacity-50 cursor-wait" : "cursor-pointer"}`}
       >
         {isUpdating ? (
@@ -103,12 +106,12 @@ function StatusBadge({
           <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${style.dot}`} />
         )}
         {isUpdating ? t("orders.updating") : label}
-        {!isUpdating && <span className="opacity-50 text-[9px] leading-none">▾</span>}
+        {!isUpdating && sellerTransitions(order.status, order.batchId).length > 0 && <span className="opacity-50 text-[9px] leading-none">▾</span>}
       </button>
 
       {isOpen && (
         <div className={`absolute top-full mt-1 z-50 bg-white border border-[#E2E8F0] rounded-xl shadow-xl overflow-hidden w-48 ${dropdownSide === "left" ? "left-0" : "right-0"}`}>
-          {Object.entries(STATUS_STYLE).map(([key, cfg]) => (
+          {Object.entries(STATUS_STYLE).filter(([key]) => sellerTransitions(order.status, order.batchId).includes(key)).map(([key, cfg]) => (
             <button
               key={key}
               onClick={() => onSelect(order.id, key)}
@@ -131,6 +134,7 @@ export default function SellerOrdersClient({ orders: initial, todayStats, period
   const router = useRouter();
   const { t, lang } = useLanguage();
   const [orders, setOrders] = useState<Order[]>(initial);
+  useEffect(() => { setOrders(initial); }, [initial]);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [page, setPage] = useState(1);
@@ -164,6 +168,8 @@ export default function SellerOrdersClient({ orders: initial, todayStats, period
   }, []);
 
   const updateStatus = async (orderId: string, newStatus: string) => {
+    if (updatingId) return;
+    if (newStatus === 'CANCELLED' && !window.confirm(lang === 'fr' ? 'Annuler cette commande ?' : 'هل تريد إلغاء هذا الطلب؟')) return;
     setOpenDropdown(null);
     setUpdatingId(orderId);
     try {
@@ -172,9 +178,17 @@ export default function SellerOrdersClient({ orders: initial, todayStats, period
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
+      if (!res.ok) {
+        const body = await res.json();
+        throw new Error(body.error || "تعذر تحديث الطلب");
+      }
       if (res.ok) {
         setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
       }
+      toast.success(lang === "fr" ? "Statut mis à jour" : "تم تحديث الحالة");
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "تعذر تحديث الطلب");
     } finally {
       setUpdatingId(null);
     }
@@ -226,6 +240,11 @@ export default function SellerOrdersClient({ orders: initial, todayStats, period
         </Link>
       </div>
 
+      <div className="rounded-xl border bg-white p-4 text-sm space-y-2">
+        <p>{lang === 'fr' ? 'Brouillon → À confirmer → Confirmée → Revue Admin → Acceptée → Lot payé → Préparation entrepôt. Minimum : 5 PCS confirmées, quel que soit le nombre de commandes. Le paiement ne vaut pas expédition.' : 'مسودة ← بانتظار التأكيد ← مؤكدة ← مراجعة الإدارة ← مقبولة ← دفعة مدفوعة ← تجهيز المستودع. الحد الأدنى 5 وحدات من الطلبات المؤكدة. الدفع لا يعني الشحن.'}</p>
+        <Link href="/seller/batches" className="inline-block p-2 text-blue-700 underline">{lang === 'fr' ? 'Créer / payer un lot' : 'إنشاء / دفع دفعة'}</Link>
+        <p>{lang === 'fr' ? 'Les retours attendent une inspection physique avant remise en stock. Consultez le portefeuille pour les écritures réelles.' : 'المرتجعات تنتظر الفحص الفعلي قبل إعادة التخزين. راجع المحفظة للقيود المالية الفعلية.'}</p>
+      </div>
       {/* ── Today Stats Bar ── */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {statCards.map(card => (
@@ -235,7 +254,7 @@ export default function SellerOrdersClient({ orders: initial, todayStats, period
             className={[
               "bg-white rounded-2xl border p-3 text-right transition",
               card.tab !== "profit" ? "hover:shadow-md cursor-pointer" : "cursor-default",
-              (card as any).wide ? "col-span-2 sm:col-span-1" : "",
+              ('wide' in card && card.wide) ? "col-span-2 sm:col-span-1" : "",
               activeTab === card.tab && card.tab !== "profit"
                 ? "border-[#4361EE] ring-2 ring-[#4361EE]/20 shadow-sm"
                 : "border-[#E2E8F0] hover:border-slate-300",
@@ -349,8 +368,8 @@ export default function SellerOrdersClient({ orders: initial, todayStats, period
                 {paginated.map(order => (
                   <tr key={order.id} className="border-b border-[#E2E8F0] last:border-0 hover:bg-[#F8FAFC]/60 transition">
                     <td className="px-4 py-3.5">
-                      <span className="font-mono text-xs text-slate-500 font-bold bg-slate-50 px-2 py-1 rounded-lg">
-                        {fmtRef(order.id, order.seqId)}
+                      <span className="inline-block max-w-40 break-all font-mono text-xs text-slate-500 font-bold bg-slate-50 px-2 py-1 rounded-lg">
+                        {orderReference(order.id, order.seqId)}
                       </span>
                     </td>
                     <td className="px-4 py-3.5">
@@ -404,7 +423,7 @@ export default function SellerOrdersClient({ orders: initial, todayStats, period
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="font-mono text-xs text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md">
-                          {fmtRef(order.id, order.seqId)}
+                          {orderReference(order.id, order.seqId)}
                         </span>
                         <span className="text-xs text-slate-400">{fmtDate(order.createdAt, lang)}</span>
                       </div>

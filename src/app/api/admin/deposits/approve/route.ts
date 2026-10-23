@@ -10,14 +10,14 @@ export async function POST(req: Request) {
     const { id } = await req.json();
     if (!id) return errorResponse("معرف الطلب مطلوب", 400);
 
-    const wallet = await approveDeposit(id);
+    const wallet = await approveDeposit(id, user.id);
 
     return NextResponse.json({
       success: true,
       message: "تم شحن رصيد البائع وتحديث الحالة بنجاح",
       newBalance: Number(wallet.balance),
     });
-  } catch (error: any) {
-    return errorResponse("حدث خطأ أثناء الموافقة: " + error.message, 500);
+  } catch (error: unknown) {
+    return errorResponse("حدث خطأ أثناء الموافقة: " + (error instanceof Error ? error.message : "Request conflict"), 500);
   }
 }
